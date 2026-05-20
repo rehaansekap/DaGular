@@ -1,0 +1,400 @@
+/* ================================= */
+/* PAGE */
+/* ================================= */
+
+.kelolaquiz-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f6f8fc 0%, #eef2f7 100%);
+  font-family: "Poppins", sans-serif;
+  padding: 30px 34px 36px 278px;
+  color: #1f2937;
+}
+
+.kelolaquiz-container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ================================= */
+/* HERO */
+/* ================================= */
+
+.kelolaquiz-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  align-items: flex-start;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.kelolaquiz-badge {
+  display: inline-block;
+  padding: 6px 13px;
+  background: #fff2d8;
+  color: #9a6700;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.kelolaquiz-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.kelolaquiz-desc {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13.5px;
+  line-height: 1.7;
+  max-width: 620px;
+}
+
+.kelolaquiz-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 12px;
+  min-width: 380px;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.summary-card span {
+  display: block;
+  font-size: 11.5px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.summary-card strong {
+  font-size: 1.35rem;
+  color: #111827;
+}
+
+/* ================================= */
+/* MAIN LAYOUT */
+/* ================================= */
+
+.kelolaquiz-layout {
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+/* ================================= */
+/* SIDEBAR FORM */
+/* ================================= */
+
+.kelolaquiz-sidebar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+.sidebar-scroll-area {
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.sidebar-head {
+  margin-bottom: 16px;
+}
+
+.sidebar-head h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.sidebar-subtext {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* ================================= */
+/* FORM */
+/* ================================= */
+
+.quiz-form-modern {
+  display: flex;
+  flex-direction: column;
+}
+
+.quiz-form-modern label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 700;
+  color: #374151;
+  font-size: 12.5px;
+}
+
+.quiz-form-modern textarea,
+.quiz-form-modern input[type="number"],
+.quiz-form-modern input[type="file"] {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 13px;
+  border: 1px solid #dbe2ea;
+  font-size: 13px;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  transition: 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  background: #fff;
+}
+
+.quiz-form-modern textarea {
+  min-height: 125px;
+  resize: vertical;
+}
+
+.quiz-form-modern textarea:focus,
+.quiz-form-modern input[type="number"]:focus,
+.quiz-form-modern input[type="file"]:focus {
+  outline: none;
+  border-color: #f4c27a;
+  box-shadow: 0 0 0 3px rgba(244, 194, 122, 0.18);
+}
+
+.upload-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin: -2px 0 10px;
+}
+
+.quiz-preview-img {
+  width: 100%;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  display: block;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* ================================= */
+/* BUTTON */
+/* ================================= */
+
+.btn-primary,
+.btn-delete {
+  border: none;
+  border-radius: 13px;
+  padding: 11px 17px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #1f2937;
+  box-shadow: 0 10px 22px rgba(244, 194, 122, 0.22);
+}
+
+.btn-primary:hover,
+.btn-delete:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.btn-delete {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(239, 68, 68, 0.16);
+}
+
+/* ================================= */
+/* CONTENT */
+/* ================================= */
+
+.kelolaquiz-content {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  min-height: 560px;
+}
+
+.detail-header h2 {
+  font-size: 1.25rem;
+}
+
+.detail-subtitle,
+.empty-box p {
+  font-size: 13px;
+}
+
+.question-accordion-list {
+  gap: 16px;
+}
+
+.accordion-group {
+  border-radius: 20px;
+}
+
+.accordion-header {
+  padding: 17px 18px;
+}
+
+.accordion-header-left h3 {
+  font-size: 15px;
+}
+
+.accordion-header-left p {
+  font-size: 12.5px;
+}
+
+.accordion-body {
+  padding: 18px;
+}
+
+.question-card {
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.question-card-head h3 {
+  font-size: 15px;
+}
+
+.question-group label,
+.readonly-box,
+.meta-inline span {
+  font-size: 12.5px;
+}
+
+/* ================================= */
+/* RESPONSIVE */
+/* ================================= */
+
+@media (max-width: 1200px) {
+  .kelolaquiz-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kelolaquiz-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .sidebar-scroll-area {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .kelolaquiz-page {
+  padding: 12px 32px 32px 278px;
+  }
+
+  .kelolaquiz-title {
+    font-size: 1.45rem;
+  }
+
+  .kelolaquiz-summary {
+    grid-template-columns: 1fr;
+    min-width: 100%;
+  }
+
+  .kelolaquiz-content,
+  .kelolaquiz-sidebar {
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .accordion-header,
+  .question-card-head,
+  .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .accordion-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .btn-primary,
+  .btn-delete {
+    width: 100%;
+  }
+}
+
+/* ================================= */
+/* TAMBAHAN UNTUK FORM LKPD */
+/* ================================= */
+
+.quiz-form-modern input[type="text"],
+.quiz-form-modern select {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 13px;
+  border: 1px solid #dbe2ea;
+  font-size: 13px;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  transition: 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  background: #fff;
+}
+
+.quiz-form-modern input[type="text"]:focus,
+.quiz-form-modern select:focus {
+  outline: none;
+  border-color: #f4c27a;
+  box-shadow: 0 0 0 3px rgba(244, 194, 122, 0.18);
+}
+
+.textarea-large {
+  min-height: 260px !important;
+  resize: vertical;
+}
+
+.pre-line {
+  white-space: pre-line;
+}
+
+.quiz-form-modern hr {
+  width: 100%;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 4px 0 16px;
+}

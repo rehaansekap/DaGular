@@ -1,43 +1,249 @@
 .home {
-  text-align: center;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-image: url('../assets/images/bg/bg1.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-position: center;
-  color: white;
-  padding: 20px;
-  height: 100vh;
+  padding: 36px 54px 36px 290px;
+  overflow-x: hidden;
 }
 
-.home h1 {
-  font-size: 2.5rem; 
-  font-family:'Tahoma';
-  font-weight: bold;
-  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8); 
-  margin-bottom: 10px;
+.hero {
+  width: 100%;
+  max-width: 1120px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 58px;
+  align-items: center;
 }
 
-.centered-content {
-  text-align: center;
+.hero-left {
+  animation: fadeUp 0.8s ease;
 }
 
-button {
-  background-color: rgb(212, 162, 100);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  margin-top: 20px;
-  cursor: pointer;
+.hero-badge {
+  display: inline-block;
+  background: #fff1d2;
+  color: #c97f12;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-size: 2.85rem;
+  line-height: 1.16;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 18px;
+}
+
+.hero-title span {
+  color: #df9b28;
+}
+
+.hero-subtitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #27364a;
+  margin-bottom: 14px;
+}
+
+.hero-desc {
+  max-width: 560px;
+  color: #667085;
+  font-size: 15px;
+  line-height: 1.75;
+  margin-bottom: 30px;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-outline {
+  padding: 13px 26px;
+  border-radius: 18px;
+  font-size: 15px;
+  font-weight: 800;
   text-decoration: none;
-  border-radius: 15px; 
-  transition: background-color 0.3s ease; 
+  transition: 0.25s ease;
 }
 
-button:hover {
-  background-color: #0056b3;
+.btn-primary {
+  background: linear-gradient(135deg, #ffc875, #f2ae4b);
+  color: #172033;
+  box-shadow: 0 14px 28px rgba(216, 154, 52, 0.22);
+}
+
+.btn-primary:hover,
+.btn-outline:hover {
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  border: 1.5px solid #cbd5e1;
+  color: #27364a;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.hero-right {
+  display: flex;
+  justify-content: center;
+}
+
+.mockup-wrapper {
+  position: relative;
+}
+
+.mockup-card {
+  width: 335px;
+  padding: 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #edf1f5;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.1);
+}
+
+.mockup-card.main {
+  animation: float 4s ease-in-out infinite;
+}
+
+.mockup-card h3 {
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.mockup-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mockup-card li {
+  padding: 12px 0;
+  border-bottom: 1px solid #edf1f5;
+  font-size: 14px;
+  color: #667085;
+}
+
+.mini-card {
+  position: absolute;
+  background: #ffffff;
+  padding: 9px 16px;
+  border-radius: 15px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #374151;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.mini-card.one {
+  top: -18px;
+  right: -30px;
+  animation: float 3s infinite;
+}
+
+.mini-card.two {
+  bottom: -22px;
+  left: -34px;
+  animation: float 3.5s infinite;
+}
+
+.mini-card.three {
+  bottom: 58px;
+  right: -44px;
+  animation: float 4.5s infinite;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .home {
+    padding-left: 120px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 42px;
+    text-align: center;
+  }
+
+  .hero-desc {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-buttons {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .home {
+    padding: 28px 24px 28px 110px;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .hero-desc {
+    font-size: 14px;
+  }
+
+  .mockup-card {
+    width: 290px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home {
+    padding-left: 100px;
+  }
+
+  .hero-title {
+    font-size: 1.9rem;
+  }
+
+  .mini-card {
+    display: none;
+  }
 }

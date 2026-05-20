@@ -1,0 +1,105 @@
+/* FONT RINGAN */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* CONTAINER */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: linear-gradient(135deg, #f5f7fa, #e9edf5);
+}
+
+/* CARD */
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 32px;
+
+  background: #ffffff;
+  border-radius: 16px;
+
+  /* shadow ringan */
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+
+  text-align: center;
+}
+
+/* TITLE */
+.login-card h2 {
+  margin-bottom: 6px;
+  font-size: 22px;
+  color: #333;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 22px;
+}
+
+/* INPUT */
+.login-card input {
+  width: 100%;
+  padding: 11px 12px;
+  margin-bottom: 14px;
+
+  border-radius: 10px;
+  border: 1px solid #ddd;
+
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.login-card input:focus {
+  outline: none;
+  border-color: #f4c27a;
+}
+
+/* BUTTON */
+.login-card button {
+  width: 100%;
+  padding: 11px;
+
+  border-radius: 10px;
+  border: none;
+
+  background: #f4c27a;
+  color: #fff;
+
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.login-card button:hover {
+  background: #e6b565;
+}
+
+.login-card button:active {
+  transform: scale(0.98);
+}
+
+/* REGISTER */
+.register-text {
+  margin-top: 18px;
+  font-size: 13px;
+  color: #777;
+}
+
+.register-text a {
+  color: #f4c27a;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.register-text a:hover {
+  text-decoration: underline;
+}

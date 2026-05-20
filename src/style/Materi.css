@@ -1,0 +1,117 @@
+.materi-list-page {
+  min-height: 100vh;
+  padding: 42px 42px 60px 300px;
+  background: #f3f5f9;
+  font-family: "Poppins", sans-serif;
+}
+
+.materi-list-container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.materi-list-header {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 46px 42px;
+  margin-bottom: 28px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.06);
+}
+
+.materi-list-header span {
+  display: inline-flex;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #fff8ef;
+  color: #b7791f;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.materi-list-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.materi-list-header p {
+  margin: 10px 0 0;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.materi-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.materi-list-card {
+  position: relative;
+  min-height: 170px;
+  padding: 24px;
+  border-radius: 22px;
+  background: #ffffff;
+  text-decoration: none;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+  transition: 0.22s ease;
+}
+
+.materi-list-card:hover {
+  transform: translateY(-4px);
+  border-color: #f0c77f;
+  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.09);
+}
+
+.materi-list-badge {
+  display: inline-flex;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d89a34, #c18422);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.materi-list-card h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.materi-list-action {
+  margin-top: 24px;
+  color: #b7791f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.materi-empty,
+.materi-loading {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .materi-list-page {
+    padding: 28px 18px 40px 112px;
+  }
+
+  .materi-list-header {
+    padding: 34px 22px;
+  }
+
+  .materi-list-header h1 {
+    font-size: 28px;
+  }
+}

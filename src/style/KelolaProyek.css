@@ -1,0 +1,584 @@
+/* ================================= */
+/* PAGE */
+/* ================================= */
+
+.kelolaproyek-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f6f8fc 0%, #eef2f7 100%);
+  font-family: "Poppins", sans-serif;
+  padding: 24px 34px 32px 260px;
+  color: #1f2937;
+}
+
+.kelolaproyek-container {
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* ================================= */
+/* HERO */
+/* ================================= */
+
+.kelolaproyek-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.kelolaproyek-badge {
+  display: inline-block;
+  padding: 8px 14px;
+  background: #fff2d8;
+  color: #9a6700;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.kelolaproyek-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.kelolaproyek-desc {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.7;
+  max-width: 720px;
+}
+
+.kelolaproyek-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  gap: 14px;
+  min-width: 380px;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.summary-card span {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.summary-card strong {
+  font-size: 1.6rem;
+  color: #111827;
+}
+
+/* ================================= */
+/* MAIN LAYOUT */
+/* ================================= */
+
+.kelolaproyek-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ================================= */
+/* SIDEBAR FORM */
+/* ================================= */
+
+.kelolaproyek-sidebar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.06);
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+}
+
+.sidebar-scroll-area {
+  max-height: calc(100vh - 88px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.sidebar-head {
+  margin-bottom: 18px;
+}
+
+.sidebar-head h2 {
+  font-size: 1.2rem;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.sidebar-subtext {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+/* ================================= */
+/* FORM */
+/* ================================= */
+
+.proyek-form-modern {
+  display: flex;
+  flex-direction: column;
+}
+
+.proyek-form-modern label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.96rem;
+}
+
+.proyek-form-modern input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid #dbe2ea;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  transition: 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  background: #fff;
+}
+
+.proyek-form-modern input:focus {
+  outline: none;
+  border-color: #f4c27a;
+  box-shadow: 0 0 0 4px rgba(244, 194, 122, 0.18);
+}
+
+/* ================================= */
+/* BUTTON */
+/* ================================= */
+
+.btn-primary,
+.btn-delete {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.btn-primary {
+  background: #f4c27a;
+  color: #1f2937;
+  box-shadow: 0 10px 24px rgba(244, 194, 122, 0.25);
+}
+
+.btn-primary:hover,
+.btn-delete:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.btn-delete {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.18);
+}
+
+/* ================================= */
+/* CONTENT */
+/* ================================= */
+
+.kelolaproyek-content {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.06);
+  min-height: 600px;
+}
+
+.empty-box {
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #6b7280;
+  text-align: center;
+  border: 2px dashed #d9e1ea;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fbfcfe 0%, #f8fafc 100%);
+  padding: 24px;
+}
+
+.empty-illustration {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.empty-box h3 {
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.empty-box p {
+  margin: 0;
+  max-width: 420px;
+}
+
+/* ================================= */
+/* DETAIL HEADER */
+/* ================================= */
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.detail-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.detail-subtitle {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* ================================= */
+/* ACCORDION */
+/* ================================= */
+
+.project-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.accordion-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.accordion-header {
+  width: 100%;
+  border: none;
+  background: linear-gradient(135deg, #fffaf1 0%, #fff4df 100%);
+  padding: 20px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.25s ease;
+}
+
+.accordion-header:hover {
+  background: linear-gradient(135deg, #fff7e8 0%, #fff1d6 100%);
+}
+
+.accordion-header.active {
+  border-bottom: 1px solid #f3e2bf;
+}
+
+.accordion-header-left h3 {
+  margin: 0 0 6px;
+  font-size: 1.08rem;
+  color: #111827;
+}
+
+.accordion-header-left p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.accordion-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meeting-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.accordion-arrow {
+  font-size: 1rem;
+  color: #6b7280;
+  transition: transform 0.25s ease;
+}
+
+.accordion-arrow.open {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  padding: 22px;
+  background: #fff;
+}
+
+/* ================================= */
+/* INFO GRID */
+/* ================================= */
+
+.student-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-card {
+  background: #f8fafc;
+  border: 1px solid #e7edf3;
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.info-card span {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.info-card strong {
+  color: #111827;
+  font-size: 1rem;
+}
+
+.info-card.highlight {
+  background: linear-gradient(135deg, #fff7e8 0%, #fff2d8 100%);
+  border-color: #f4d39e;
+}
+
+.info-card.highlight strong {
+  font-size: 1.2rem;
+  color: #8a5a00;
+}
+
+/* ================================= */
+/* PROJECT LIST */
+/* ================================= */
+
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.project-card {
+  background: #ffffff;
+  border: 1px solid #e7edf3;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.project-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.project-card-head h3 {
+  margin: 0;
+  font-size: 1.12rem;
+  color: #111827;
+}
+
+.project-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.project-group {
+  margin-bottom: 16px;
+}
+
+.project-group:last-child {
+  margin-bottom: 0;
+}
+
+.project-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.readonly-box {
+  background: #f8fafc;
+  border: 1px solid #e6ebf2;
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: #374151;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.meta-inline {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.meta-inline span {
+  background: #f8fafc;
+  border: 1px solid #e6ebf2;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.project-action {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.empty-text {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+
+/* ================================= */
+/* RESPONSIVE */
+/* ================================= */
+
+@media (max-width: 1200px) {
+  .kelolaproyek-page {
+    padding-left: 120px;
+  }
+
+  .kelolaproyek-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kelolaproyek-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .sidebar-scroll-area {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .student-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kelolaproyek-page {
+    padding: 22px 16px 24px 104px;
+  }
+
+  .kelolaproyek-content,
+  .kelolaproyek-sidebar {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .kelolaproyek-title {
+    font-size: 1.6rem;
+  }
+
+  .kelolaproyek-summary {
+    grid-template-columns: 1fr;
+    min-width: 100%;
+  }
+
+  .student-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .accordion-header,
+  .project-card-head,
+  .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .accordion-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .accordion-body {
+    padding: 16px;
+  }
+
+  .project-action {
+    justify-content: stretch;
+  }
+
+  .btn-primary,
+  .btn-delete {
+    width: 100%;
+  }
+}
