@@ -2,6 +2,10 @@ import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "../../style/MateriDetail.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 export default function MateriDetail() {
   const { id } = useParams();
 
@@ -10,10 +14,24 @@ export default function MateriDetail() {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  const getFileUrl = (url) => {
+    if (!url) return "";
+
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+
+    return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   useEffect(() => {
     const fetchMateri = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/materi/${id}`);
+        const res = await fetch(`${API_URL}/api/materi/${id}`);
 
         if (!res.ok) throw new Error("Materi tidak ditemukan");
 
@@ -37,19 +55,23 @@ export default function MateriDetail() {
     return (
       <div className="materi-detail-section" key={key}>
         <div className="detail-image-grid">
-          {imageGroup.map((img, i) => (
-            <div className="detail-image-card" key={i}>
-              <img
-                src={img.url}
-                alt={img.title}
-                onClick={() => setSelectedImage(img.url)}
-              />
+          {imageGroup.map((img, i) => {
+            const imageUrl = getFileUrl(img.url);
 
-              {img.title && (
-                <span className="detail-image-caption">{img.title}</span>
-              )}
-            </div>
-          ))}
+            return (
+              <div className="detail-image-card" key={i}>
+                <img
+                  src={imageUrl}
+                  alt={img.title || `Gambar materi ${i + 1}`}
+                  onClick={() => setSelectedImage(imageUrl)}
+                />
+
+                {img.title && (
+                  <span className="detail-image-caption">{img.title}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -89,7 +111,11 @@ export default function MateriDetail() {
           <div className="materi-detail-section" key={index}>
             {item.title && <h3>{item.title}</h3>}
 
-            <video src={item.url} controls className="detail-video" />
+            <video
+              src={getFileUrl(item.url)}
+              controls
+              className="detail-video"
+            />
           </div>
         );
       }

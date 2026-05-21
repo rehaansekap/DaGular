@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "../../style/KelolaMateri.css";
+
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
 
 export default function KelolaMateri() {
   const [materiList, setMateriList] = useState([]);
@@ -8,11 +12,46 @@ export default function KelolaMateri() {
   const [pertemuan, setPertemuan] = useState("");
   const [loading, setLoading] = useState(false);
   const [konten, setKonten] = useState([]);
+  const [openPertemuan, setOpenPertemuan] = useState({});
+
+  const token = localStorage.getItem("token");
+
+  const getFileUrl = (url) => {
+    if (!url) return "";
+
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+
+    return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
 
   const fetchMateri = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/materi");
-      setMateriList(res.data);
+      const res = await axios.get(`${API_URL}/api/materi`);
+      const data = Array.isArray(res.data) ? res.data : res.data.data || [];
+
+      setMateriList(data);
+
+      const daftarPertemuan = [
+        ...new Set(data.map((item) => Number(item.pertemuan))),
+      ].sort((a, b) => a - b);
+
+      setOpenPertemuan((prev) => {
+        const next = { ...prev };
+
+        daftarPertemuan.forEach((item, index) => {
+          if (next[item] === undefined) {
+            next[item] = index === 0;
+          }
+        });
+
+        return next;
+      });
     } catch (err) {
       console.error("Error fetch materi:", err);
     }
@@ -22,24 +61,44 @@ export default function KelolaMateri() {
     fetchMateri();
   }, []);
 
-  const groupedMateri = materiList.reduce((acc, item) => {
-    const key = Number(item.pertemuan);
+  const groupedMateri = useMemo(() => {
+    const grouped = {};
 
-    if (!acc[key]) acc[key] = [];
+    materiList.forEach((item) => {
+      const key = Number(item.pertemuan);
 
-    acc[key].push(item);
-    return acc;
-  }, {});
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    });
+
+    return Object.keys(grouped)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map((key) => ({
+        pertemuan: key,
+        items: grouped[key],
+      }));
+  }, [materiList]);
+
+  const totalPertemuan = groupedMateri.length;
+  const totalMateri = materiList.length;
+
+  const togglePertemuan = (nomor) => {
+    setOpenPertemuan((prev) => ({
+      ...prev,
+      [nomor]: !prev[nomor],
+    }));
+  };
 
   const tambahKonten = (type) => {
-    setKonten([
-      ...konten,
+    setKonten((prev) => [
+      ...prev,
       {
         type,
         title: "",
         body: "",
         url: "",
-        urutan: konten.length + 1,
+        urutan: prev.length + 1,
       },
     ]);
   };
@@ -65,29 +124,28 @@ export default function KelolaMateri() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Silakan login terlebih dahulu");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/materi/upload",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await axios.post(`${API_URL}/api/materi/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       const updated = [...konten];
       updated[index].url = res.data.url;
       setKonten(updated);
     } catch (err) {
       console.error("Upload gagal:", err);
-      alert("Upload gagal");
+      alert(err.response?.data?.message || "Upload gagal");
     }
   };
 
@@ -116,13 +174,17 @@ export default function KelolaMateri() {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/materi/delete/${id}`);
+      await axios.delete(`${API_URL}/api/materi/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       alert("Materi berhasil dihapus");
       fetchMateri();
     } catch (err) {
       console.error("Gagal menghapus materi:", err);
-      alert("Gagal menghapus materi");
+      alert(err.response?.data?.message || "Gagal menghapus materi");
     }
   };
 
@@ -135,15 +197,18 @@ export default function KelolaMateri() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const token = localStorage.getItem("token");
-
     if (!token) {
       alert("Silakan login terlebih dahulu");
       return;
     }
 
-    if (!judul || !pertemuan) {
+    if (!judul.trim() || !pertemuan) {
       alert("Judul dan pertemuan wajib diisi");
+      return;
+    }
+
+    if (konten.length === 0) {
+      alert("Minimal tambahkan satu konten materi");
       return;
     }
 
@@ -151,9 +216,9 @@ export default function KelolaMateri() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/materi/create",
+        `${API_URL}/api/materi/create`,
         {
-          judul,
+          judul: judul.trim(),
           pertemuan: Number(pertemuan),
           konten,
         },
@@ -171,9 +236,9 @@ export default function KelolaMateri() {
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Gagal menambahkan materi");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const getTypeLabel = (type) => {
@@ -194,6 +259,18 @@ export default function KelolaMateri() {
             <p className="kelola-desc">
               Tambahkan, susun, dan kelola materi pembelajaran siswa.
             </p>
+          </div>
+
+          <div className="kelola-summary">
+            <div className="summary-card">
+              <span>Total Pertemuan</span>
+              <strong>{totalPertemuan}</strong>
+            </div>
+
+            <div className="summary-card">
+              <span>Total Materi</span>
+              <strong>{totalMateri}</strong>
+            </div>
           </div>
         </div>
 
@@ -242,8 +319,8 @@ export default function KelolaMateri() {
             )}
 
             {konten.map((item, index) => (
-              <div key={index} className="konten-block">
-                <div className="konten-block-header">
+              <div className="content-card" key={index}>
+                <div className="content-card-header">
                   <div>
                     <span className="content-type">
                       {getTypeLabel(item.type)}
@@ -253,7 +330,7 @@ export default function KelolaMateri() {
 
                   <button
                     type="button"
-                    className="delete-content"
+                    className="btn-delete"
                     onClick={() => hapusKonten(index)}
                   >
                     Hapus
@@ -268,48 +345,56 @@ export default function KelolaMateri() {
                     onChange={(e) =>
                       handleKontenChange(index, "title", e.target.value)
                     }
-                    placeholder="Judul konten opsional"
+                    placeholder="Masukkan judul konten"
                   />
                 </div>
 
                 {item.type === "text" && (
                   <div className="form-group">
-                    <label>Isi Materi</label>
+                    <label>Isi Teks</label>
                     <textarea
                       value={item.body}
                       onChange={(e) =>
                         handleKontenChange(index, "body", e.target.value)
                       }
-                      placeholder="Tulis isi materi di sini..."
+                      placeholder="Tulis isi materi di sini"
                     />
                   </div>
                 )}
 
-                {(item.type === "image" || item.type === "video") && (
+                {item.type === "image" && (
                   <div className="form-group">
-                    <label>
-                      {item.type === "image" ? "Upload Gambar" : "Upload Video"}
-                    </label>
-
+                    <label>Upload Gambar</label>
                     <input
                       type="file"
-                      accept={item.type === "image" ? "image/*" : "video/*"}
+                      accept="image/*"
                       onChange={(e) => handleUpload(e, index)}
                     />
 
-                    {item.url && item.type === "image" && (
+                    {item.url && (
                       <img
-                        src={item.url}
-                        alt="preview"
-                        className="preview-img"
+                        src={getFileUrl(item.url)}
+                        alt={item.title || "Preview gambar"}
+                        className="content-preview-img"
                       />
                     )}
+                  </div>
+                )}
 
-                    {item.url && item.type === "video" && (
+                {item.type === "video" && (
+                  <div className="form-group">
+                    <label>Upload Video</label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => handleUpload(e, index)}
+                    />
+
+                    {item.url && (
                       <video
-                        src={item.url}
+                        src={getFileUrl(item.url)}
                         controls
-                        className="preview-video"
+                        className="content-preview-video"
                       />
                     )}
                   </div>
@@ -317,22 +402,22 @@ export default function KelolaMateri() {
 
                 {item.type === "genially" && (
                   <div className="form-group">
-                    <label>Embed Genially</label>
-
+                    <label>Link / Embed Genially</label>
                     <input
                       type="text"
-                      placeholder="Tempel link Genially atau kode iframe"
                       value={item.url}
                       onChange={(e) =>
                         handleGeniallyChange(index, e.target.value)
                       }
+                      placeholder="Tempel link atau kode embed Genially"
                     />
 
                     {item.url && (
-                      <div className="genially-preview">
+                      <div className="genially-preview-wrapper">
                         <iframe
                           src={item.url}
                           title={item.title || "Genially Preview"}
+                          className="genially-preview"
                           allowFullScreen
                         />
                       </div>
@@ -342,85 +427,99 @@ export default function KelolaMateri() {
               </div>
             ))}
 
-            <div className="button-row">
-              <button
-                type="button"
-                className="add-content"
-                onClick={() => tambahKonten("text")}
-              >
+            <div className="content-button-group">
+              <button type="button" onClick={() => tambahKonten("text")}>
                 + Teks
               </button>
 
-              <button
-                type="button"
-                className="add-content"
-                onClick={() => tambahKonten("image")}
-              >
+              <button type="button" onClick={() => tambahKonten("image")}>
                 + Gambar
               </button>
 
-              <button
-                type="button"
-                className="add-content"
-                onClick={() => tambahKonten("video")}
-              >
+              <button type="button" onClick={() => tambahKonten("video")}>
                 + Video
               </button>
 
-              <button
-                type="button"
-                className="add-content"
-                onClick={() => tambahKonten("genially")}
-              >
+              <button type="button" onClick={() => tambahKonten("genially")}>
                 + Genially
               </button>
             </div>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Menyimpan..." : "Simpan Materi"}
-            </button>
+            <div className="form-action">
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? "Menyimpan..." : "Simpan Materi"}
+              </button>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={resetForm}
+                disabled={loading}
+              >
+                Reset
+              </button>
+            </div>
           </form>
 
-          <div className="materi-list">
+          <div className="kelola-list">
             <div className="list-header">
-              <div>
-                <h2>Daftar Materi</h2>
-                <p>{materiList.length} materi tersedia</p>
-              </div>
+              <h2>Daftar Materi</h2>
+              <p>Materi yang sudah tersimpan berdasarkan pertemuan.</p>
             </div>
 
-            {Object.keys(groupedMateri).length === 0 && (
-              <div className="empty-list">Belum ada materi tersimpan.</div>
-            )}
-
-            {Object.keys(groupedMateri)
-              .sort((a, b) => a - b)
-              .map((pertemuan) => (
-                <div key={pertemuan} className="pertemuan-group">
-                  <h3>Pertemuan {pertemuan}</h3>
-
-                  <div className="materi-grid">
-                    {groupedMateri[pertemuan].map((m) => (
-                      <div key={m.id} className="materi-card">
-                        <div>
-                          <span className="materi-number">
-                            Pertemuan {m.pertemuan}
-                          </span>
-                          <h4>{m.judul}</h4>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="delete-materi-btn"
-                          onClick={() => handleDeleteMateri(m.id)}
-                        >
-                          Hapus
-                        </button>
+            {groupedMateri.length === 0 ? (
+              <div className="empty-content">Belum ada materi.</div>
+            ) : (
+              <div className="materi-accordion-list">
+                {groupedMateri.map((group) => (
+                  <div className="materi-accordion-group" key={group.pertemuan}>
+                    <button
+                      type="button"
+                      className={`accordion-header ${
+                        openPertemuan[group.pertemuan] ? "active" : ""
+                      }`}
+                      onClick={() => togglePertemuan(group.pertemuan)}
+                    >
+                      <div>
+                        <h3>Pertemuan {group.pertemuan}</h3>
+                        <p>{group.items.length} materi tersedia</p>
                       </div>
-                    ))}
+
+                      <span>
+                        {openPertemuan[group.pertemuan] ? "▲" : "▼"}
+                      </span>
+                    </button>
+
+                    {openPertemuan[group.pertemuan] && (
+                      <div className="accordion-body">
+                        {group.items.map((item, index) => (
+                          <div className="materi-card" key={item.id}>
+                            <div className="materi-card-head">
+                              <div>
+                                <span>Materi {index + 1}</span>
+                                <h3>{item.judul}</h3>
+                              </div>
+
+                              <button
+                                type="button"
+                                className="btn-delete"
+                                onClick={() => handleDeleteMateri(item.id)}
+                              >
+                                Hapus
+                              </button>
+                            </div>
+
+                            <div className="materi-card-meta">
+                              <span>Pertemuan {item.pertemuan}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

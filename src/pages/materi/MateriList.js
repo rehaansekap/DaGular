@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../../style/Materi.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 export default function MateriList() {
   const [materi, setMateri] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,7 +13,7 @@ export default function MateriList() {
   useEffect(() => {
     const fetchMateri = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/materi");
+        const res = await fetch(`${API_URL}/api/materi`);
         const data = await res.json();
 
         setMateri(data);

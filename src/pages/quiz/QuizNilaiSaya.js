@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import "../../style/QuizNilaiSaya.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 function QuizNilaiSaya() {
   const user_id = localStorage.getItem("user_id");
 
@@ -9,6 +13,20 @@ function QuizNilaiSaya() {
   const [detailAnswers, setDetailAnswers] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const getImageSrc = (url) => {
+    if (!url) return "";
+
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+
+    return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
 
   const formatAnswer = (answer) => {
     if (!answer) return <i>Tidak ada jawaban</i>;
@@ -22,10 +40,35 @@ function QuizNilaiSaya() {
             {Object.entries(parsed).map(([key, value]) => (
               <div className="answer-row" key={key}>
                 <div className="answer-label">{key}</div>
+
                 <div className="answer-value">
-                  {typeof value === "object"
-                    ? JSON.stringify(value, null, 2)
-                    : String(value).replace(/\\"/g, '"')}
+                  {typeof value === "object" && value !== null ? (
+                    <>
+                      {value.text && (
+                        <div className="normal-answer">
+                          {String(value.text).replace(/\\"/g, '"')}
+                        </div>
+                      )}
+
+                      {value.image_url && (
+                        <div style={{ marginTop: "10px" }}>
+                          <img
+                            src={getImageSrc(value.image_url)}
+                            alt={value.image_name || "Gambar jawaban"}
+                            className="quiz-image"
+                          />
+                        </div>
+                      )}
+
+                      {!value.text && !value.image_url && (
+                        <pre style={{ whiteSpace: "pre-wrap" }}>
+                          {JSON.stringify(value, null, 2)}
+                        </pre>
+                      )}
+                    </>
+                  ) : (
+                    String(value).replace(/\\"/g, '"')
+                  )}
                 </div>
               </div>
             ))}
@@ -44,9 +87,11 @@ function QuizNilaiSaya() {
 
     try {
       setLoadingDetail(true);
+
       const res = await fetch(
-        `http://localhost:5000/api/quiz/my-results/${user_id}/${resultId}`
+        `${API_URL}/api/quiz/my-results/${user_id}/${resultId}`
       );
+
       const data = await res.json();
 
       setSelectedResult(data.data.result);
@@ -64,9 +109,9 @@ function QuizNilaiSaya() {
 
       try {
         setLoadingList(true);
-        const res = await fetch(
-          `http://localhost:5000/api/quiz/my-results/${user_id}`
-        );
+
+        const res = await fetch(`${API_URL}/api/quiz/my-results/${user_id}`);
+
         const data = await res.json();
         setResults(data.data || []);
       } catch (error) {
@@ -85,7 +130,8 @@ function QuizNilaiSaya() {
         <div className="nilai-saya-header">
           <h1 className="nilai-saya-title">Nilai Quiz Saya</h1>
           <p className="nilai-saya-desc">
-            Lihat status penilaian, total nilai, dan catatan guru untuk setiap quiz.
+            Lihat status penilaian, total nilai, dan catatan guru untuk setiap
+            quiz.
           </p>
         </div>
 
@@ -157,21 +203,26 @@ function QuizNilaiSaya() {
                     <p>
                       <span>Pertemuan:</span> {selectedResult.pertemuan}
                     </p>
+
                     <p>
                       <span>Status:</span>{" "}
                       {selectedResult.status === "graded"
                         ? "Sudah dinilai"
                         : "Belum dinilai"}
                     </p>
+
                     <p>
                       <span>Total Nilai:</span>{" "}
                       {selectedResult.status === "graded"
                         ? selectedResult.score ?? 0
                         : "Menunggu penilaian"}
                     </p>
+
                     <p>
                       <span>Tanggal Submit:</span>{" "}
-                      {new Date(selectedResult.created_at).toLocaleString("id-ID")}
+                      {new Date(selectedResult.created_at).toLocaleString(
+                        "id-ID"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -190,7 +241,7 @@ function QuizNilaiSaya() {
                         <div className="jawaban-group">
                           <label>Gambar Soal</label>
                           <img
-                            src={item.image_url}
+                            src={getImageSrc(item.image_url)}
                             alt={`Soal ${index + 1}`}
                             className="quiz-image"
                           />

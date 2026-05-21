@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 
 const uploadDir = "uploads/quiz";
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -30,7 +31,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
     return res.json({
       message: "Upload gambar berhasil",
-      url: `http://localhost:5000/uploads/quiz/${req.file.filename}`,
+      url: `/uploads/quiz/${req.file.filename}`,
     });
   } catch (err) {
     console.error("UPLOAD QUIZ ERROR:", err);
@@ -137,6 +138,7 @@ router.post("/questions", async (req, res) => {
 router.put("/questions/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
     const {
       question,
       pertemuan,

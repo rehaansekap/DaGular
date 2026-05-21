@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../../style/KelolaProyek.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 function KelolaProyek() {
   const [projects, setProjects] = useState([]);
   const [judul, setJudul] = useState("");
@@ -11,22 +15,25 @@ function KelolaProyek() {
 
   const loadProjects = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/proyek");
+      const res = await fetch(`${API_URL}/api/proyek`);
       const result = await res.json();
       const data = result.data || [];
+
       setProjects(data);
 
-      const daftarPertemuan = [...new Set(data.map((p) => Number(p.pertemuan)))].sort(
-        (a, b) => a - b
-      );
+      const daftarPertemuan = [
+        ...new Set(data.map((p) => Number(p.pertemuan))),
+      ].sort((a, b) => a - b);
 
       setOpenPertemuan((prev) => {
         const next = { ...prev };
+
         daftarPertemuan.forEach((item, index) => {
           if (next[item] === undefined) {
             next[item] = index === 0;
           }
         });
+
         return next;
       });
     } catch (error) {
@@ -43,6 +50,7 @@ function KelolaProyek() {
 
     projects.forEach((p) => {
       const key = Number(p.pertemuan);
+
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(p);
     });
@@ -52,7 +60,7 @@ function KelolaProyek() {
       .sort((a, b) => a - b)
       .map((key) => ({
         pertemuan: key,
-        items: grouped[key]
+        items: grouped[key],
       }));
   }, [projects]);
 
@@ -62,7 +70,7 @@ function KelolaProyek() {
   const togglePertemuan = (nomor) => {
     setOpenPertemuan((prev) => ({
       ...prev,
-      [nomor]: !prev[nomor]
+      [nomor]: !prev[nomor],
     }));
   };
 
@@ -80,16 +88,16 @@ function KelolaProyek() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/proyek/create", {
+      const res = await fetch(`${API_URL}/api/proyek/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           judul: judul.trim(),
-          pertemuan: Number(pertemuan)
-        })
+          pertemuan: Number(pertemuan),
+        }),
       });
 
       const result = await res.json();
@@ -102,9 +110,10 @@ function KelolaProyek() {
 
       setJudul("");
       setPertemuan("");
+
       setOpenPertemuan((prev) => ({
         ...prev,
-        [pertemuanBaru]: true
+        [pertemuanBaru]: true,
       }));
 
       alert(result.message || "Proyek berhasil ditambahkan");
@@ -119,11 +128,11 @@ function KelolaProyek() {
     if (!window.confirm("Yakin ingin menghapus proyek ini?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/proyek/${id}`, {
+      const res = await fetch(`${API_URL}/api/proyek/${id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const result = await res.json().catch(() => ({}));
@@ -158,6 +167,7 @@ function KelolaProyek() {
               <span>Total Pertemuan</span>
               <strong>{totalPertemuan}</strong>
             </div>
+
             <div className="summary-card">
               <span>Total Proyek</span>
               <strong>{totalProyek}</strong>
@@ -240,6 +250,7 @@ function KelolaProyek() {
                           <span className="meeting-badge">
                             {group.items.length} proyek
                           </span>
+
                           <span
                             className={`accordion-arrow ${
                               openPertemuan[group.pertemuan] ? "open" : ""
@@ -257,10 +268,12 @@ function KelolaProyek() {
                               <span>Pertemuan</span>
                               <strong>{group.pertemuan}</strong>
                             </div>
+
                             <div className="info-card">
                               <span>Total Proyek</span>
                               <strong>{group.items.length}</strong>
                             </div>
+
                             <div className="info-card highlight">
                               <span>Status</span>
                               <strong>Aktif</strong>
@@ -291,6 +304,7 @@ function KelolaProyek() {
 
                                 <div className="project-action">
                                   <button
+                                    type="button"
                                     className="btn-delete"
                                     onClick={() => hapusProyek(p.id)}
                                   >

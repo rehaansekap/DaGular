@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import "../style/Login.css";
 
+const API_URL = (import.meta.env.VITE_API_URL || "http://178.128.209.29:5000").replace(/\/$/, "");
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,10 +23,10 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        "http://localhost:5000/auth/login",
-        { email, password }
-      );
+      const res = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password,
+      });
 
       const data = res.data;
 
@@ -38,8 +40,8 @@ export default function Login() {
       } else {
         navigate("/");
       }
-
     } catch (err) {
+      console.error("Login error:", err);
       alert(err.response?.data?.message || "Login gagal");
     } finally {
       setLoading(false);
@@ -48,9 +50,7 @@ export default function Login() {
 
   return (
     <div className="login-container">
-
       <form className="login-card" onSubmit={handleLogin}>
-
         <h2>Login E-Learning</h2>
         <p className="subtitle">Masuk untuk melanjutkan belajar</p>
 
@@ -58,14 +58,14 @@ export default function Login() {
           type="email"
           placeholder="Email"
           value={email}
-          onChange={(e)=>setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
           type="password"
           placeholder="Password"
           value={password}
-          onChange={(e)=>setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
 
         <button type="submit" disabled={loading}>
@@ -75,9 +75,7 @@ export default function Login() {
         <p className="register-text">
           Belum punya akun? <Link to="/register">Daftar</Link>
         </p>
-
       </form>
-
     </div>
   );
 }

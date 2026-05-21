@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../../style/NilaiQuizGuru.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 function NilaiQuizGuru() {
   const [results, setResults] = useState([]);
   const [selectedResult, setSelectedResult] = useState(null);
@@ -11,12 +15,60 @@ function NilaiQuizGuru() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [previewImage, setPreviewImage] = useState(null);
 
-  const API_URL = "http://localhost:5000";
-
   const getImageUrl = (path) => {
     if (!path) return "";
-    if (path.startsWith("http")) return path;
-    return `${API_URL}/${path}`;
+
+    if (
+      path.startsWith("http://") ||
+      path.startsWith("https://") ||
+      path.startsWith("data:")
+    ) {
+      return path;
+    }
+
+    return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  };
+
+  const renderAnswerValue = (value) => {
+    if (!value) return "-";
+
+    if (typeof value === "string") {
+      return value.replace(/\\"/g, '"');
+    }
+
+    if (typeof value === "object" && value !== null) {
+      return (
+        <div className="answer-nested">
+          {value.text && (
+            <div className="answer-text">
+              {String(value.text).replace(/\\"/g, '"')}
+            </div>
+          )}
+
+          {value.image_url && (
+            <button
+              type="button"
+              className="answer-image-btn"
+              onClick={() => setPreviewImage(getImageUrl(value.image_url))}
+            >
+              <img
+                src={getImageUrl(value.image_url)}
+                alt={value.image_name || "Gambar jawaban siswa"}
+              />
+              <span>Klik untuk memperbesar</span>
+            </button>
+          )}
+
+          {!value.text && !value.image_url && (
+            <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>
+              {JSON.stringify(value, null, 2)}
+            </pre>
+          )}
+        </div>
+      );
+    }
+
+    return String(value);
   };
 
   const renderStudentAnswer = (answerText) => {
@@ -25,13 +77,17 @@ function NilaiQuizGuru() {
     try {
       const parsed = JSON.parse(answerText);
 
-      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
         return (
           <div className="structured-answer">
             {Object.entries(parsed).map(([key, value], index) => (
               <div className="answer-item" key={index}>
                 <div className="answer-label">{key}</div>
-                <div className="answer-value">{value || "-"}</div>
+                <div className="answer-value">{renderAnswerValue(value)}</div>
               </div>
             ))}
           </div>
@@ -44,27 +100,36 @@ function NilaiQuizGuru() {
             {parsed.map((value, index) => (
               <div className="answer-item" key={index}>
                 <div className="answer-label">Jawaban {index + 1}</div>
-                <div className="answer-value">{value || "-"}</div>
+                <div className="answer-value">{renderAnswerValue(value)}</div>
               </div>
             ))}
           </div>
         );
       }
     } catch (err) {
-      return answerText;
+      return <div>{String(answerText).replace(/\\"/g, '"')}</div>;
     }
 
-    return answerText;
+    return <div>{String(answerText).replace(/\\"/g, '"')}</div>;
   };
 
   const loadResults = async () => {
     try {
       setLoadingList(true);
+
       const res = await fetch(`${API_URL}/api/quiz/results`);
       const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Gagal mengambil hasil quiz:", data.message);
+        setResults([]);
+        return;
+      }
+
       setResults(data.data || []);
     } catch (error) {
       console.error("Gagal mengambil hasil quiz:", error);
+      setResults([]);
     } finally {
       setLoadingList(false);
     }
@@ -73,10 +138,17 @@ function NilaiQuizGuru() {
   const loadDetail = async (resultId) => {
     try {
       setLoadingDetail(true);
+
       const res = await fetch(`${API_URL}/api/quiz/results/${resultId}`);
       const data = await res.json();
 
+      if (!res.ok) {
+        alert(data.message || "Gagal mengambil detail hasil quiz");
+        return;
+      }
+
       setSelectedResult(data.data.result);
+
       setAnswers(
         (data.data.answers || []).map((item) => ({
           answer_id: item.id,
@@ -90,6 +162,7 @@ function NilaiQuizGuru() {
       );
     } catch (error) {
       console.error("Gagal mengambil detail hasil quiz:", error);
+      alert("Terjadi kesalahan saat mengambil detail hasil quiz");
     } finally {
       setLoadingDetail(false);
     }
@@ -158,6 +231,12 @@ function NilaiQuizGuru() {
       );
 
       const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Gagal menyimpan nilai");
+        return;
+      }
+
       alert(data.message || "Nilai berhasil disimpan");
 
       await loadResults();
@@ -184,7 +263,8 @@ function NilaiQuizGuru() {
             <span className="nilaiquiz-badge">Panel Guru</span>
             <h1 className="nilaiquiz-title">Penilaian LKPD Siswa</h1>
             <p className="nilaiquiz-desc">
-              Periksa jawaban teks maupun gambar siswa, beri nilai, lalu simpan penilaian.
+              Periksa jawaban teks maupun gambar siswa, beri nilai, lalu simpan
+              penilaian.
             </p>
           </div>
 
@@ -193,10 +273,12 @@ function NilaiQuizGuru() {
               <span>Total</span>
               <strong>{results.length}</strong>
             </div>
+
             <div className="summary-card">
               <span>Belum Dinilai</span>
               <strong>{pendingResults.length}</strong>
             </div>
+
             <div className="summary-card">
               <span>Sudah Dinilai</span>
               <strong>{gradedResults.length}</strong>
@@ -211,19 +293,31 @@ function NilaiQuizGuru() {
 
               <div className="filter-group">
                 <button
-                  className={activeFilter === "all" ? "filter-btn active" : "filter-btn"}
+                  className={
+                    activeFilter === "all" ? "filter-btn active" : "filter-btn"
+                  }
                   onClick={() => setActiveFilter("all")}
                 >
                   Semua
                 </button>
+
                 <button
-                  className={activeFilter === "pending" ? "filter-btn active" : "filter-btn"}
+                  className={
+                    activeFilter === "pending"
+                      ? "filter-btn active"
+                      : "filter-btn"
+                  }
                   onClick={() => setActiveFilter("pending")}
                 >
                   Belum
                 </button>
+
                 <button
-                  className={activeFilter === "graded" ? "filter-btn active" : "filter-btn"}
+                  className={
+                    activeFilter === "graded"
+                      ? "filter-btn active"
+                      : "filter-btn"
+                  }
                   onClick={() => setActiveFilter("graded")}
                 >
                   Selesai
@@ -248,6 +342,7 @@ function NilaiQuizGuru() {
                   >
                     <div className="submission-top">
                       <h3>{item.student_name || `User #${item.user_id}`}</h3>
+
                       <span
                         className={
                           item.status === "graded"
@@ -264,6 +359,7 @@ function NilaiQuizGuru() {
                         <span>Pertemuan</span>
                         <strong>{item.pertemuan}</strong>
                       </p>
+
                       <p>
                         <span>Nilai</span>
                         <strong>{item.score ?? 0}</strong>
@@ -284,7 +380,9 @@ function NilaiQuizGuru() {
               <div className="empty-box">
                 <div className="empty-illustration">📄</div>
                 <h3>Pilih submission siswa</h3>
-                <p>Jawaban siswa akan tampil di sini untuk diperiksa dan dinilai.</p>
+                <p>
+                  Jawaban siswa akan tampil di sini untuk diperiksa dan dinilai.
+                </p>
               </div>
             ) : loadingDetail ? (
               <div className="empty-box">
@@ -295,7 +393,11 @@ function NilaiQuizGuru() {
                 <div className="detail-header">
                   <div>
                     <span className="detail-label">Detail LKPD</span>
-                    <h2>{selectedResult.student_name || `User #${selectedResult.user_id}`}</h2>
+                    <h2>
+                      {selectedResult.student_name ||
+                        `User #${selectedResult.user_id}`}
+                    </h2>
+
                     <p className="detail-subtitle">
                       Pertemuan {selectedResult.pertemuan} •{" "}
                       {selectedResult.status === "graded"
@@ -313,19 +415,25 @@ function NilaiQuizGuru() {
                   <div className="info-card">
                     <span>Nama Siswa</span>
                     <strong>
-                      {selectedResult.student_name || `User #${selectedResult.user_id}`}
+                      {selectedResult.student_name ||
+                        `User #${selectedResult.user_id}`}
                     </strong>
                   </div>
+
                   <div className="info-card">
                     <span>Pertemuan</span>
                     <strong>{selectedResult.pertemuan}</strong>
                   </div>
+
                   <div className="info-card">
                     <span>Status</span>
                     <strong>
-                      {selectedResult.status === "graded" ? "Sudah dinilai" : "Belum dinilai"}
+                      {selectedResult.status === "graded"
+                        ? "Sudah dinilai"
+                        : "Belum dinilai"}
                     </strong>
                   </div>
+
                   <div className="info-card highlight">
                     <span>Total Nilai</span>
                     <strong>{totalScoreDraft}</strong>
@@ -337,7 +445,9 @@ function NilaiQuizGuru() {
                     <div className="jawaban-card" key={item.answer_id}>
                       <div className="jawaban-card-head">
                         <div>
-                          <span className="question-count">Soal {index + 1}</span>
+                          <span className="question-count">
+                            Soal {index + 1}
+                          </span>
                           <h3>Pemeriksaan Jawaban</h3>
                         </div>
 
@@ -347,18 +457,22 @@ function NilaiQuizGuru() {
                             type="number"
                             min="0"
                             value={item.score}
-                            onChange={(e) => handleScoreChange(index, e.target.value)}
+                            onChange={(e) =>
+                              handleScoreChange(index, e.target.value)
+                            }
                           />
                         </div>
                       </div>
 
                       <div className="jawaban-group">
                         <label>Pertanyaan</label>
-                        <div className="readonly-box">{item.question || "-"}</div>
+                        <div className="readonly-box">
+                          {item.question || "-"}
+                        </div>
                       </div>
 
                       <div className="jawaban-group">
-                        <label>Jawaban Teks Siswa</label>
+                        <label>Jawaban Siswa</label>
                         <div className="readonly-box answer-box">
                           {renderStudentAnswer(item.answer_text)}
                         </div>
@@ -367,10 +481,13 @@ function NilaiQuizGuru() {
                       {item.answer_image && (
                         <div className="jawaban-group">
                           <label>Jawaban Gambar Siswa</label>
+
                           <button
                             type="button"
                             className="answer-image-btn"
-                            onClick={() => setPreviewImage(getImageUrl(item.answer_image))}
+                            onClick={() =>
+                              setPreviewImage(getImageUrl(item.answer_image))
+                            }
                           >
                             <img
                               src={getImageUrl(item.answer_image)}
@@ -386,7 +503,9 @@ function NilaiQuizGuru() {
                         <textarea
                           placeholder="Tulis feedback untuk siswa..."
                           value={item.teacher_note}
-                          onChange={(e) => handleNoteChange(index, e.target.value)}
+                          onChange={(e) =>
+                            handleNoteChange(index, e.target.value)
+                          }
                         />
                       </div>
                     </div>
@@ -400,10 +519,18 @@ function NilaiQuizGuru() {
                   </div>
 
                   <div className="action-buttons">
-                    <button className="btn-secondary" onClick={handleCloseDetail}>
+                    <button
+                      className="btn-secondary"
+                      onClick={handleCloseDetail}
+                    >
                       Tutup
                     </button>
-                    <button className="btn-primary" onClick={handleSave} disabled={saving}>
+
+                    <button
+                      className="btn-primary"
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
                       {saving ? "Menyimpan..." : "Simpan Penilaian"}
                     </button>
                   </div>
@@ -416,10 +543,17 @@ function NilaiQuizGuru() {
 
       {previewImage && (
         <div className="image-modal" onClick={() => setPreviewImage(null)}>
-          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="image-modal-close" onClick={() => setPreviewImage(null)}>
+          <div
+            className="image-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="image-modal-close"
+              onClick={() => setPreviewImage(null)}
+            >
               ×
             </button>
+
             <img src={previewImage} alt="Preview jawaban siswa" />
           </div>
         </div>

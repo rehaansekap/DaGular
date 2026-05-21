@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../../style/QuizPage.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 function QuizPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -15,8 +19,22 @@ function QuizPage() {
   const user_id = localStorage.getItem("user_id");
   const name = localStorage.getItem("name") || "Siswa";
 
+  const getImageSrc = (url) => {
+    if (!url) return "";
+
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+
+    return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   useEffect(() => {
-    fetch(`http://localhost:5000/api/quiz/questions?pertemuan=${id}`)
+    fetch(`${API_URL}/api/quiz/questions?pertemuan=${id}`)
       .then((res) => res.json())
       .then((data) => {
         const sortedQuestions = (data.data || []).sort((a, b) => a.id - b.id);
@@ -113,7 +131,7 @@ function QuizPage() {
     }));
 
     try {
-      const res = await fetch("http://localhost:5000/api/quiz/upload", {
+      const res = await fetch(`${API_URL}/api/quiz/upload`, {
         method: "POST",
         body: formData,
       });
@@ -250,7 +268,7 @@ function QuizPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/quiz/submit", {
+      const res = await fetch(`${API_URL}/api/quiz/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -265,7 +283,7 @@ function QuizPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message);
+        alert(data.message || "Gagal mengirim jawaban");
         return;
       }
 
@@ -351,10 +369,10 @@ function QuizPage() {
                 {item.image_url && (
                   <div className="quiz-image-wrapper">
                     <img
-                      src={item.image_url}
+                      src={getImageSrc(item.image_url)}
                       alt={`Gambar soal ${index + 1}`}
                       className="quiz-image clickable"
-                      onClick={() => setPreviewImage(item.image_url)}
+                      onClick={() => setPreviewImage(getImageSrc(item.image_url))}
                     />
                   </div>
                 )}
@@ -425,11 +443,13 @@ function QuizPage() {
                               </p>
 
                               <img
-                                src={uploadedImage.image_url}
+                                src={getImageSrc(uploadedImage.image_url)}
                                 alt={`Preview ${field}`}
                                 className="quiz-image clickable"
                                 onClick={() =>
-                                  setPreviewImage(uploadedImage.image_url)
+                                  setPreviewImage(
+                                    getImageSrc(uploadedImage.image_url)
+                                  )
                                 }
                               />
 
@@ -512,11 +532,13 @@ function QuizPage() {
                               </p>
 
                               <img
-                                src={uploadedImage.image_url}
+                                src={getImageSrc(uploadedImage.image_url)}
                                 alt={`Preview ${field}`}
                                 className="quiz-image clickable"
                                 onClick={() =>
-                                  setPreviewImage(uploadedImage.image_url)
+                                  setPreviewImage(
+                                    getImageSrc(uploadedImage.image_url)
+                                  )
                                 }
                               />
 

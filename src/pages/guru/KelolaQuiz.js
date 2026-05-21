@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "../../style/KelolaQuiz.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 export default function KelolaQuizGuru() {
   const [questions, setQuestions] = useState([]);
 
@@ -18,9 +22,23 @@ export default function KelolaQuizGuru() {
   const [uploading, setUploading] = useState(false);
   const [openPertemuan, setOpenPertemuan] = useState({});
 
+  const getImageUrl = (url) => {
+    if (!url) return "";
+
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+
+    return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   const fetchQuestions = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/quiz/questions");
+      const res = await axios.get(`${API_URL}/api/quiz/questions`);
       const data = res.data.data || [];
       setQuestions(data);
 
@@ -30,9 +48,11 @@ export default function KelolaQuizGuru() {
 
       setOpenPertemuan((prev) => {
         const next = { ...prev };
+
         daftarPertemuan.forEach((item, index) => {
           if (next[item] === undefined) next[item] = index === 0;
         });
+
         return next;
       });
     } catch (err) {
@@ -108,21 +128,29 @@ export default function KelolaQuizGuru() {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      alert("File harus berupa gambar");
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      alert("Ukuran gambar maksimal 5 MB");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
     setUploading(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/quiz/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await axios.post(`${API_URL}/api/quiz/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       setImageUrl(res.data.url);
     } catch (err) {
@@ -180,13 +208,11 @@ export default function KelolaQuizGuru() {
         judul_lkpd: judulLkpd.trim() || null,
         pendahuluan_lkpd: pendahuluanLkpd.trim() || null,
         answer_type: answerType,
-        answer_fields: fieldsArray.length > 0 ? JSON.stringify(fieldsArray) : null,
+        answer_fields:
+          fieldsArray.length > 0 ? JSON.stringify(fieldsArray) : null,
       };
 
-      const res = await axios.post(
-        "http://localhost:5000/api/quiz/questions",
-        payload
-      );
+      const res = await axios.post(`${API_URL}/api/quiz/questions`, payload);
 
       const newPertemuan = Number(pertemuan);
 
@@ -233,9 +259,7 @@ export default function KelolaQuizGuru() {
     if (!window.confirm("Yakin hapus soal ini?")) return;
 
     try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/quiz/questions/${id}`
-      );
+      const res = await axios.delete(`${API_URL}/api/quiz/questions/${id}`);
 
       setQuestions((prev) => prev.filter((q) => q.id !== id));
       alert(res.data.message || "Soal berhasil dihapus");
@@ -281,10 +305,12 @@ export default function KelolaQuizGuru() {
               <span>Total Pertemuan</span>
               <strong>{totalPertemuan}</strong>
             </div>
+
             <div className="summary-card">
               <span>Total Soal</span>
               <strong>{totalSoal}</strong>
             </div>
+
             <div className="summary-card">
               <span>Soal Bergambar</span>
               <strong>{totalBergambar}</strong>
@@ -372,7 +398,7 @@ Konteks Penggunaan`}
 
                 {imageUrl && (
                   <img
-                    src={imageUrl}
+                    src={getImageUrl(imageUrl)}
                     alt="Preview soal"
                     className="quiz-preview-img"
                   />
@@ -441,6 +467,7 @@ Konteks Penggunaan`}
                           <span className="meeting-badge">
                             {group.items.length} soal
                           </span>
+
                           <span
                             className={`accordion-arrow ${
                               openPertemuan[group.pertemuan] ? "open" : ""
@@ -458,10 +485,12 @@ Konteks Penggunaan`}
                               <span>Pertemuan</span>
                               <strong>{group.pertemuan}</strong>
                             </div>
+
                             <div className="info-card">
                               <span>Total Soal</span>
                               <strong>{group.items.length}</strong>
                             </div>
+
                             <div className="info-card">
                               <span>Dengan Gambar</span>
                               <strong>
@@ -471,6 +500,7 @@ Konteks Penggunaan`}
                                 }
                               </strong>
                             </div>
+
                             <div className="info-card highlight">
                               <span>Status</span>
                               <strong>Aktif</strong>
@@ -542,7 +572,7 @@ Konteks Penggunaan`}
                                   <div className="question-group">
                                     <label>Gambar Soal</label>
                                     <img
-                                      src={q.image_url}
+                                      src={getImageUrl(q.image_url)}
                                       alt={`Soal ${index + 1}`}
                                       className="quiz-preview-img"
                                     />

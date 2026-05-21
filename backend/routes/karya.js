@@ -3,61 +3,77 @@ const router = express.Router();
 const multer = require("multer");
 const db = require("../config/db");
 const authMiddleware = require("../middleware/auth");
+const path = require("path");
+const fs = require("fs");
 
 /* ================= STORAGE ================= */
 
+const uploadDir = "uploads";
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    cb(null, uploadDir);
   },
 
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
+    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueName + path.extname(file.originalname));
+  },
 });
 
 const upload = multer({ storage });
 
 /* ================= UPLOAD KARYA ================= */
 
-router.post("/upload", authMiddleware, upload.single("image"), async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const projectId = req.body.project_id;
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const projectId = req.body.project_id;
 
-    if (!req.file) {
-      return res.status(400).json({
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "File harus diupload",
+        });
+      }
+
+      if (!projectId) {
+        return res.status(400).json({
+          success: false,
+          message: "Project harus dipilih",
+        });
+      }
+
+      const imagePath = `/uploads/${req.file.filename}`;
+
+      await db.query(
+        "INSERT INTO karya (project_id, user_id, image_path) VALUES (?, ?, ?)",
+        [projectId, userId, imagePath]
+      );
+
+      return res.json({
+        success: true,
+        message: "Upload berhasil",
+        image_path: imagePath,
+      });
+    } catch (err) {
+      console.error("UPLOAD KARYA ERROR:", err);
+
+      return res.status(500).json({
         success: false,
-        message: "File harus diupload"
+        message: "Upload gagal",
       });
     }
-
-    if (!projectId) {
-      return res.status(400).json({
-        success: false,
-        message: "Project harus dipilih"
-      });
-    }
-
-    const imagePath = `http://localhost:5000/uploads/${req.file.filename}`;
-
-    await db.query(
-      "INSERT INTO karya (project_id, user_id, image_path) VALUES (?, ?, ?)",
-      [projectId, userId, imagePath]
-    );
-
-    res.json({
-      success: true,
-      message: "Upload berhasil"
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Upload gagal"
-    });
   }
-});
+);
 
 /* ================= GALERI PER PROJECT ================= */
 
@@ -80,15 +96,16 @@ router.get("/project/:id", async (req, res) => {
       [req.params.id]
     );
 
-    res.json({
+    return res.json({
       success: true,
-      data: rows
+      data: rows,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
+    console.error("GET GALERI PROJECT ERROR:", err);
+
+    return res.status(500).json({
       success: false,
-      message: "Gagal mengambil galeri"
+      message: "Gagal mengambil galeri",
     });
   }
 });
@@ -116,15 +133,16 @@ router.get("/:karyaId/comments", async (req, res) => {
       [karyaId]
     );
 
-    res.json({
+    return res.json({
       success: true,
-      data: rows
+      data: rows,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
+    console.error("GET KOMENTAR KARYA ERROR:", err);
+
+    return res.status(500).json({
       success: false,
-      message: "Gagal mengambil komentar"
+      message: "Gagal mengambil komentar",
     });
   }
 });
@@ -140,7 +158,7 @@ router.post("/:karyaId/comments", authMiddleware, async (req, res) => {
     if (!komentar || !komentar.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Komentar tidak boleh kosong"
+        message: "Komentar tidak boleh kosong",
       });
     }
 
@@ -168,16 +186,17 @@ router.post("/:karyaId/comments", authMiddleware, async (req, res) => {
       `
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Komentar berhasil ditambahkan",
-      data: rows[0]
+      data: rows[0],
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
+    console.error("TAMBAH KOMENTAR KARYA ERROR:", err);
+
+    return res.status(500).json({
       success: false,
-      message: "Gagal menambahkan komentar"
+      message: "Gagal menambahkan komentar",
     });
   }
 });

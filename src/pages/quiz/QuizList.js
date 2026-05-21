@@ -2,11 +2,15 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "../../style/QuizList.css";
 
+const API_URL = (
+  process.env.REACT_APP_API_URL || "http://178.128.209.29:5000"
+).replace(/\/$/, "");
+
 export default function QuizList() {
   const [questions, setQuestions] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/quiz/questions")
+    fetch(`${API_URL}/api/quiz/questions`)
       .then((res) => res.json())
       .then((data) => setQuestions(data.data || []))
       .catch((err) => console.error("Gagal mengambil data:", err));
@@ -40,7 +44,6 @@ export default function QuizList() {
             {pertemuanList.map((pertemuan) => {
               const items = groupedQuiz[pertemuan];
 
-              // ambil judul dari soal pertama
               const judul =
                 items.find((q) => q.judul_lkpd)?.judul_lkpd ||
                 `LKPD Pertemuan ${pertemuan}`;
