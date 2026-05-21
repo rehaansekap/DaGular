@@ -20,7 +20,7 @@ export default function KelolaQuizGuru() {
 
   const fetchQuestions = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/quiz/questions");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions`);
       const data = res.data.data || [];
       setQuestions(data);
 
@@ -115,7 +115,7 @@ export default function KelolaQuizGuru() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/quiz/upload",
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/upload`,
         formData,
         {
           headers: {
@@ -184,7 +184,7 @@ export default function KelolaQuizGuru() {
       };
 
       const res = await axios.post(
-        "http://localhost:5000/api/quiz/questions",
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions`,
         payload
       );
 
@@ -234,7 +234,7 @@ export default function KelolaQuizGuru() {
 
     try {
       const res = await axios.delete(
-        `http://localhost:5000/api/quiz/questions/${id}`
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions/${id}`
       );
 
       setQuestions((prev) => prev.filter((q) => q.id !== id));

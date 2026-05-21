@@ -11,7 +11,7 @@ function KelolaProyek() {
 
   const loadProjects = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/proyek");
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/proyek`);
       const result = await res.json();
       const data = result.data || [];
       setProjects(data);
@@ -80,7 +80,7 @@ function KelolaProyek() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/proyek/create", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/proyek/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,7 +119,7 @@ function KelolaProyek() {
     if (!window.confirm("Yakin ingin menghapus proyek ini?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/proyek/${id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/proyek/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`

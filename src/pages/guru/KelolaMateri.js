@@ -11,7 +11,7 @@ export default function KelolaMateri() {
 
   const fetchMateri = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/materi");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi`);
       setMateriList(res.data);
     } catch (err) {
       console.error("Error fetch materi:", err);
@@ -72,7 +72,7 @@ export default function KelolaMateri() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/materi/upload",
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi/upload`,
         formData,
         {
           headers: {
@@ -116,7 +116,7 @@ export default function KelolaMateri() {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/materi/delete/${id}`);
+      await axios.delete(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi/delete/${id}`);
 
       alert("Materi berhasil dihapus");
       fetchMateri();
@@ -151,7 +151,7 @@ export default function KelolaMateri() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/materi/create",
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi/create`,
         {
           judul,
           pertemuan: Number(pertemuan),

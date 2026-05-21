@@ -11,7 +11,7 @@ function NilaiQuizGuru() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [previewImage, setPreviewImage] = useState(null);
 
-  const API_URL = "http://localhost:5000";
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const getImageUrl = (path) => {
     if (!path) return "";
@@ -174,6 +174,7 @@ function NilaiQuizGuru() {
 
   useEffect(() => {
     loadResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

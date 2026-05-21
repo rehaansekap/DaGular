@@ -39,7 +39,7 @@ router.post("/upload", authMiddleware, upload.single("image"), async (req, res) 
       });
     }
 
-    const imagePath = `http://localhost:5000/uploads/${req.file.filename}`;
+    const imagePath = `${process.env.BASE_URL || "http://localhost:5000"}/uploads/${req.file.filename}`;
 
     await db.query(
       "INSERT INTO karya (project_id, user_id, image_path) VALUES (?, ?, ?)",

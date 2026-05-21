@@ -16,7 +16,7 @@ function QuizPage() {
   const name = localStorage.getItem("name") || "Siswa";
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/quiz/questions?pertemuan=${id}`)
+    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions?pertemuan=${id}`)
       .then((res) => res.json())
       .then((data) => {
         const sortedQuestions = (data.data || []).sort((a, b) => a.id - b.id);
@@ -113,7 +113,7 @@ function QuizPage() {
     }));
 
     try {
-      const res = await fetch("http://localhost:5000/api/quiz/upload", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/upload`, {
         method: "POST",
         body: formData,
       });
@@ -250,7 +250,7 @@ function QuizPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/quiz/submit", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

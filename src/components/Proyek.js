@@ -53,7 +53,7 @@ function Proyek() {
     setLoadingProjects(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/proyek");
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/proyek`);
       const result = await res.json();
       const data = result.data || [];
 
@@ -77,7 +77,7 @@ function Proyek() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/karya/${karyaId}/comments`
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/karya/${karyaId}/comments`
       );
       const text = await res.text();
 
@@ -115,7 +115,7 @@ function Proyek() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/karya/project/${selectedProjectId}`
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/karya/project/${selectedProjectId}`
       );
 
       const result = await res.json();
@@ -179,7 +179,7 @@ function Proyek() {
     setUploading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/karya/upload", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/karya/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -224,7 +224,7 @@ function Proyek() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/karya/${karyaId}/comments`,
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/karya/${karyaId}/comments`,
         {
           method: "POST",
           headers: {

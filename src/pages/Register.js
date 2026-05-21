@@ -35,7 +35,7 @@ export default function Register() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/auth/register",
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/auth/register`,
         {
           method: "POST",
           headers: {

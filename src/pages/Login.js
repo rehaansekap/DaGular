@@ -22,7 +22,7 @@ export default function Login() {
       setLoading(true);
 
       const res = await axios.post(
-        "http://localhost:5000/auth/login",
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/auth/login`,
         { email, password }
       );
 

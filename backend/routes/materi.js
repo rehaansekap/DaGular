@@ -32,7 +32,7 @@ router.post("/upload", upload.single("file"), (req, res) => {
 
     res.json({
       message: "Upload berhasil",
-      url: `http://localhost:5000/uploads/${req.file.filename}`
+      url: `${process.env.BASE_URL || "http://localhost:5000"}/uploads/${req.file.filename}`
     });
 
   } catch (err) {

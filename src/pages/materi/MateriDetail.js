@@ -13,7 +13,7 @@ export default function MateriDetail() {
   useEffect(() => {
     const fetchMateri = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/materi/${id}`);
+        const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi/${id}`);
 
         if (!res.ok) throw new Error("Materi tidak ditemukan");
 

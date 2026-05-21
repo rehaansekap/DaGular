@@ -9,7 +9,7 @@ export default function MateriList() {
   useEffect(() => {
     const fetchMateri = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/materi");
+        const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi`);
         const data = await res.json();
 
         setMateri(data);

@@ -6,7 +6,7 @@ export default function QuizList() {
   const [questions, setQuestions] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/quiz/questions")
+    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions`)
       .then((res) => res.json())
       .then((data) => setQuestions(data.data || []))
       .catch((err) => console.error("Gagal mengambil data:", err));

@@ -30,7 +30,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
     return res.json({
       message: "Upload gambar berhasil",
-      url: `http://localhost:5000/uploads/quiz/${req.file.filename}`,
+      url: `${process.env.BASE_URL || "http://localhost:5000"}/uploads/quiz/${req.file.filename}`,
     });
   } catch (err) {
     console.error("UPLOAD QUIZ ERROR:", err);
