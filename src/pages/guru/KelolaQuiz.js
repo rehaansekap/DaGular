@@ -2,30 +2,320 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "../../style/KelolaQuiz.css";
 
+const API_BASE_URL = "http://localhost:5000";
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+const DEFAULT_FIELD = { value: "jawaban", label: "Jawaban" };
+
+const emptyRubricForm = (fieldKey = DEFAULT_FIELD.value) => ({
+  field_key: fieldKey,
+  score: 4,
+  min_match: 1,
+  keywords: "",
+  feedback: "",
+});
+
+const getErrorMessage = (err, fallback = "Terjadi kesalahan") => {
+  const message = err?.response?.data?.message || err?.message || fallback;
+  const detail = err?.response?.data?.error;
+  return detail ? `${message}\nDetail: ${detail}` : message;
+};
+
+const safeJsonParse = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const normalizeAnswerFields = (value) => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    const parsed = safeJsonParse(trimmed);
+
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+
+    if (typeof parsed === "string") {
+      return parsed
+        .split(/\r?\n|,/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    return trimmed
+      .split(/\r?\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const toFieldKey = (label, index) => {
+  const key = String(label || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^\s*\d+[).:-]\s*/, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return key || `field_${index + 1}`;
+};
+
+const normalizeFieldOrderKey = (value = "") => {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^\s*\d+[).:-]\s*/, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+};
+
+const parseAvailableFields = (answerFieldsValue) => {
+  const fields = normalizeAnswerFields(answerFieldsValue);
+
+  if (fields.length === 0) return [DEFAULT_FIELD];
+
+  const usedKeys = new Set();
+
+  return fields.map((fieldText, index) => {
+    const label =
+      String(fieldText)
+        .replace(/^\s*\d+[).:-]\s*/, "")
+        .trim() || `Jawaban ${index + 1}`;
+
+    const baseKey = toFieldKey(label, index);
+    let value = baseKey;
+    let duplicateIndex = 2;
+
+    while (usedKeys.has(value)) {
+      value = `${baseKey}_${duplicateIndex}`;
+      duplicateIndex += 1;
+    }
+
+    usedKeys.add(value);
+
+    return { value, label };
+  });
+};
+
+const ensureFieldExists = (fields, fieldKey) => {
+  const normalizedFields = fields?.length ? fields : [DEFAULT_FIELD];
+  const cleanFieldKey = String(fieldKey || "").trim();
+
+  if (!cleanFieldKey) return normalizedFields;
+
+  const exists = normalizedFields.some((field) => field.value === cleanFieldKey);
+  if (exists) return normalizedFields;
+
+  return [
+    ...normalizedFields,
+    {
+      value: cleanFieldKey,
+      label: cleanFieldKey.replace(/_/g, " "),
+    },
+  ];
+};
+
+const normalizeKeywordsArray = (value) => {
+  let rawItems = [];
+
+  if (Array.isArray(value)) {
+    rawItems = value;
+  } else if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!trimmed) return [];
+
+    const parsed = safeJsonParse(trimmed);
+
+    if (Array.isArray(parsed)) {
+      rawItems = parsed;
+    } else {
+      rawItems = trimmed.split(/[,;\n\r]+/);
+    }
+  }
+
+  const seen = new Set();
+
+  return rawItems
+    .map((item) => String(item).trim())
+    .filter(Boolean)
+    .filter((item) => {
+      const key = item.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+};
+
+const keywordsToInputText = (value) => normalizeKeywordsArray(value).join(", ");
+const keywordsToStorageText = (value) => normalizeKeywordsArray(value).join(",");
+
+const normalizeRubric = (rubric) => ({
+  ...rubric,
+  score: Number(rubric?.score) || 0,
+  min_match: Math.max(1, Number(rubric?.min_match) || 1),
+  keywords: keywordsToInputText(rubric?.keywords),
+});
+
+const sortRubricsByFieldOrder = (rubrics = [], answerFieldsValue = "") => {
+  const fields = parseAvailableFields(answerFieldsValue);
+  const fieldOrderMap = new Map();
+
+  fields.forEach((field, index) => {
+    fieldOrderMap.set(normalizeFieldOrderKey(field.value), index);
+    fieldOrderMap.set(normalizeFieldOrderKey(field.label), index);
+  });
+
+  return [...rubrics]
+    .map(normalizeRubric)
+    .sort((a, b) => {
+      const orderA =
+        fieldOrderMap.get(normalizeFieldOrderKey(a.field_key)) ?? 9999;
+      const orderB =
+        fieldOrderMap.get(normalizeFieldOrderKey(b.field_key)) ?? 9999;
+
+      if (orderA !== orderB) return orderA - orderB;
+
+      const scoreA = Number(a.score) || 0;
+      const scoreB = Number(b.score) || 0;
+
+      if (scoreA !== scoreB) return scoreB - scoreA;
+
+      const minA = Number(a.min_match) || 0;
+      const minB = Number(b.min_match) || 0;
+
+      if (minA !== minB) return minB - minA;
+
+      return Number(a.id || 0) - Number(b.id || 0);
+    });
+};
+
+const formatRubrikFieldLabel = (fieldKey, fields = []) => {
+  const matchedField = fields.find((field) => {
+    return (
+      normalizeFieldOrderKey(field.value) === normalizeFieldOrderKey(fieldKey) ||
+      normalizeFieldOrderKey(field.label) === normalizeFieldOrderKey(fieldKey)
+    );
+  });
+
+  const label = matchedField?.label || fieldKey || "Jawaban";
+
+  return String(label)
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export default function KelolaQuizGuru() {
   const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [openPertemuan, setOpenPertemuan] = useState({});
 
   const [inputSoal, setInputSoal] = useState("");
   const [answerFields, setAnswerFields] = useState("");
   const [pertemuan, setPertemuan] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [answerType, setAnswerType] = useState("text");
-
   const [judulLkpd, setJudulLkpd] = useState("");
   const [pendahuluanLkpd, setPendahuluanLkpd] = useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [openPertemuan, setOpenPertemuan] = useState({});
+  const [rubriksPerSoal, setRubriksPerSoal] = useState({});
+  const [fieldsPerSoal, setFieldsPerSoal] = useState({});
+  const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+  const [rubricForm, setRubricForm] = useState(emptyRubricForm());
+  const [editingRubricId, setEditingRubricId] = useState(null);
+  const [loadingRubriks, setLoadingRubriks] = useState({});
+  const [rubricSubmitting, setRubricSubmitting] = useState(false);
+  const [openRubrikList, setOpenRubrikList] = useState({});
+
+  const currentKeywordCount = useMemo(
+    () => normalizeKeywordsArray(rubricForm.keywords).length,
+    [rubricForm.keywords]
+  );
+
+  const getQuestionById = (id) =>
+    questions.find((q) => String(q.id) === String(id));
+
+  const getFieldsForQuestion = (question) => {
+    if (!question) return [DEFAULT_FIELD];
+
+    return fieldsPerSoal[question.id]?.length
+      ? fieldsPerSoal[question.id]
+      : parseAvailableFields(question.answer_fields);
+  };
+
+  const fetchRubriksForQuestion = async (questionId, answerFieldsValue = null) => {
+    if (!questionId) return;
+
+    setLoadingRubriks((prev) => ({
+      ...prev,
+      [questionId]: true,
+    }));
+
+    try {
+      const question = getQuestionById(questionId);
+
+      const res = await api.get(`/api/quiz/rubrics/${questionId}`);
+
+      setRubriksPerSoal((prev) => ({
+        ...prev,
+        [questionId]: sortRubricsByFieldOrder(
+          res.data?.data || [],
+          answerFieldsValue ?? question?.answer_fields ?? ""
+        ),
+      }));
+    } catch (err) {
+      console.error(`Gagal fetch rubrik untuk soal ${questionId}:`, err);
+      setRubriksPerSoal((prev) => ({
+        ...prev,
+        [questionId]: [],
+      }));
+    } finally {
+      setLoadingRubriks((prev) => ({
+        ...prev,
+        [questionId]: false,
+      }));
+    }
+  };
 
   const fetchQuestions = async () => {
+    setPageLoading(true);
+
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions`);
-      const data = res.data.data || [];
+      const res = await api.get("/api/quiz/questions");
+      const data = res.data?.data || [];
+
       setQuestions(data);
 
+      const fieldsMap = {};
+      data.forEach((q) => {
+        fieldsMap[q.id] = parseAvailableFields(q.answer_fields);
+      });
+      setFieldsPerSoal(fieldsMap);
+
       const daftarPertemuan = [
-        ...new Set(data.map((q) => Number(q.pertemuan))),
+        ...new Set(data.map((q) => Number(q.pertemuan)).filter(Boolean)),
       ].sort((a, b) => a - b);
 
       setOpenPertemuan((prev) => {
@@ -35,8 +325,36 @@ export default function KelolaQuizGuru() {
         });
         return next;
       });
+
+      const rubrikResults = await Promise.all(
+        data.map(async (q) => {
+          try {
+            const rubrikRes = await api.get(`/api/quiz/rubrics/${q.id}`);
+
+            return {
+              questionId: q.id,
+              rubriks: sortRubricsByFieldOrder(
+                rubrikRes.data?.data || [],
+                q.answer_fields
+              ),
+            };
+          } catch (err) {
+            console.error(`Gagal fetch rubrik untuk soal ${q.id}:`, err);
+            return { questionId: q.id, rubriks: [] };
+          }
+        })
+      );
+
+      const rubrikMap = {};
+      rubrikResults.forEach(({ questionId, rubriks }) => {
+        rubrikMap[questionId] = rubriks;
+      });
+      setRubriksPerSoal(rubrikMap);
     } catch (err) {
       console.error("Gagal mengambil soal:", err);
+      alert(getErrorMessage(err, "Gagal mengambil data soal"));
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -59,13 +377,48 @@ export default function KelolaQuizGuru() {
       .map((key) => ({
         pertemuan: key,
         items: grouped[key],
-        intro: grouped[key][0],
+        intro:
+          grouped[key].find((q) => q.judul_lkpd || q.pendahuluan_lkpd) ||
+          grouped[key][0],
       }));
   }, [questions]);
 
   const totalPertemuan = groupedQuestions.length;
   const totalSoal = questions.length;
   const totalBergambar = questions.filter((q) => q.image_url).length;
+
+  const setFieldsForQuestion = (questionId, fields) => {
+    setFieldsPerSoal((prev) => ({
+      ...prev,
+      [questionId]: fields?.length ? fields : [DEFAULT_FIELD],
+    }));
+  };
+
+  const resetRubricForm = (questionId = selectedQuestionId) => {
+    const question = getQuestionById(questionId);
+    const fields = getFieldsForQuestion(question);
+
+    setRubricForm(emptyRubricForm(fields[0]?.value || DEFAULT_FIELD.value));
+    setEditingRubricId(null);
+  };
+
+  const updateRubricForm = (changes) => {
+    setRubricForm((prev) => {
+      const next = { ...prev, ...changes };
+
+      if ("min_match" in changes || "keywords" in changes) {
+        const keywordCount = normalizeKeywordsArray(next.keywords).length;
+        let minMatch = Number(next.min_match) || 1;
+
+        minMatch = Math.max(1, minMatch);
+        if (keywordCount > 0) minMatch = Math.min(minMatch, keywordCount);
+
+        next.min_match = minMatch;
+      }
+
+      return next;
+    });
+  };
 
   const togglePertemuan = (nomor) => {
     setOpenPertemuan((prev) => ({
@@ -104,9 +457,35 @@ export default function KelolaQuizGuru() {
     }
   };
 
+  const parseAnswerFields = () => normalizeAnswerFields(answerFields);
+
+  const getAnswerTypeText = (type) => {
+    if (type === "image") return "Gambar";
+    if (type === "text_image") return "Teks dan Gambar";
+    return "Teks";
+  };
+
+  const getAnswerFieldsText = (value) => {
+    const fields = normalizeAnswerFields(value);
+    return fields.length > 0 ? fields.join(", ") : "-";
+  };
+
   const handleUploadGambar = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("File harus berupa gambar");
+      e.target.value = "";
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("Ukuran gambar maksimal 5 MB");
+      e.target.value = "";
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -114,35 +493,33 @@ export default function KelolaQuizGuru() {
     setUploading(true);
 
     try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/upload`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await api.post("/api/quiz/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      setImageUrl(res.data.url);
+      const uploadedUrl = res.data?.url || res.data?.data?.url;
+
+      if (!uploadedUrl) {
+        throw new Error("URL gambar tidak dikirim oleh server");
+      }
+
+      setImageUrl(uploadedUrl);
     } catch (err) {
-      console.error("Upload gagal:", err);
-      alert(err.response?.data?.message || "Upload gambar gagal");
+      console.error("Upload gambar gagal:", err);
+      alert(getErrorMessage(err, "Upload gambar gagal"));
+      e.target.value = "";
     } finally {
       setUploading(false);
     }
   };
 
-  const parseAnswerFields = () => {
-    return answerFields
-      .split("\n")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  };
-
   const handleTambah = async () => {
-    if (!pertemuan) {
-      alert("Pertemuan wajib diisi");
+    const nomorPertemuan = Number(pertemuan);
+
+    if (!nomorPertemuan || nomorPertemuan < 1) {
+      alert("Pertemuan wajib diisi dengan angka lebih dari 0");
       return;
     }
 
@@ -175,33 +552,20 @@ export default function KelolaQuizGuru() {
 
       const payload = {
         question: inputSoal.trim(),
-        pertemuan: Number(pertemuan),
+        pertemuan: nomorPertemuan,
         image_url: imageUrl || null,
-        judul_lkpd: judulLkpd.trim() || null,
-        pendahuluan_lkpd: pendahuluanLkpd.trim() || null,
+        judul_lkpd: judulLkpd.trim() || existingIntro?.judul_lkpd || null,
+        pendahuluan_lkpd:
+          pendahuluanLkpd.trim() || existingIntro?.pendahuluan_lkpd || null,
         answer_type: answerType,
         answer_fields: fieldsArray.length > 0 ? JSON.stringify(fieldsArray) : null,
       };
 
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions`,
-        payload
-      );
-
-      const newPertemuan = Number(pertemuan);
-
-      setQuestions((prev) => [
-        {
-          id: res.data.id,
-          ...payload,
-          pertemuan: newPertemuan,
-        },
-        ...prev,
-      ]);
+      const res = await api.post("/api/quiz/questions", payload);
 
       setOpenPertemuan((prev) => ({
         ...prev,
-        [newPertemuan]: true,
+        [nomorPertemuan]: true,
       }));
 
       setInputSoal("");
@@ -209,11 +573,11 @@ export default function KelolaQuizGuru() {
       setImageUrl("");
       setAnswerType("text");
 
-      alert(res.data.message || "Soal berhasil ditambahkan");
-      fetchQuestions();
+      await fetchQuestions();
+      alert(res.data?.message || "Soal berhasil ditambahkan");
     } catch (err) {
       console.error("Tambah soal gagal:", err);
-      alert(err.response?.data?.message || "Gagal menambahkan soal");
+      alert(getErrorMessage(err, "Gagal menambahkan soal"));
     } finally {
       setLoading(false);
     }
@@ -227,39 +591,179 @@ export default function KelolaQuizGuru() {
     setAnswerType("text");
     setJudulLkpd("");
     setPendahuluanLkpd("");
+    setSelectedQuestionId(null);
+    setRubricForm(emptyRubricForm());
+    setEditingRubricId(null);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Yakin hapus soal ini?")) return;
+    if (
+      !window.confirm(
+        "Yakin hapus soal ini? Rubrik pada soal ini juga akan ikut hilang jika backend memakai relasi cascade."
+      )
+    ) {
+      return;
+    }
 
     try {
-      const res = await axios.delete(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/quiz/questions/${id}`
-      );
+      const res = await api.delete(`/api/quiz/questions/${id}`);
 
-      setQuestions((prev) => prev.filter((q) => q.id !== id));
-      alert(res.data.message || "Soal berhasil dihapus");
+      setQuestions((prev) => prev.filter((q) => String(q.id) !== String(id)));
+
+      setRubriksPerSoal((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+
+      setFieldsPerSoal((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+
+      setOpenRubrikList((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+
+      if (String(selectedQuestionId) === String(id)) {
+        setSelectedQuestionId(null);
+        setEditingRubricId(null);
+        setRubricForm(emptyRubricForm());
+      }
+
+      alert(res.data?.message || "Soal berhasil dihapus");
     } catch (err) {
       console.error("Hapus soal gagal:", err);
-      alert(err.response?.data?.message || "Gagal menghapus");
+      alert(getErrorMessage(err, "Gagal menghapus soal"));
     }
   };
 
-  const getAnswerTypeText = (type) => {
-    if (type === "image") return "Gambar";
-    if (type === "text_image") return "Teks dan Gambar";
-    return "Teks";
+  const toggleRubrikList = (questionId) => {
+    setOpenRubrikList((prev) => ({
+      ...prev,
+      [questionId]: !prev[questionId],
+    }));
   };
 
-  const getAnswerFieldsText = (value) => {
-    if (!value) return "-";
+  const handleOpenRubrikForm = async (question) => {
+    const fields = parseAvailableFields(question.answer_fields);
+
+    setFieldsForQuestion(question.id, fields);
+    setSelectedQuestionId(question.id);
+    setEditingRubricId(null);
+    setRubricForm(emptyRubricForm(fields[0]?.value || DEFAULT_FIELD.value));
+
+    await fetchRubriksForQuestion(question.id, question.answer_fields);
+  };
+
+  const handleTambahRubrik = async () => {
+    if (!selectedQuestionId) {
+      alert("Pilih soal terlebih dahulu");
+      return;
+    }
+
+    const question = getQuestionById(selectedQuestionId);
+    const fields = getFieldsForQuestion(question);
+    const allowedFieldKeys = fields.map((field) => field.value);
+    const fieldKey = String(rubricForm.field_key || "").trim();
+    const score = Math.min(4, Math.max(1, Number(rubricForm.score) || 1));
+    const keywordsArray = normalizeKeywordsArray(rubricForm.keywords);
+
+    if (!fieldKey) {
+      alert("Field Key wajib dipilih");
+      return;
+    }
+
+    if (!allowedFieldKeys.includes(fieldKey)) {
+      alert("Field Key tidak sesuai dengan kolom jawaban pada soal ini");
+      return;
+    }
+
+    if (keywordsArray.length === 0) {
+      alert(
+        "Keywords wajib diisi minimal 1 kata kunci. Rubrik tanpa keyword bisa membuat penilaian otomatis selalu cocok."
+      );
+      return;
+    }
+
+    const minMatch = Math.min(
+      keywordsArray.length,
+      Math.max(1, Number(rubricForm.min_match) || 1)
+    );
+
+    const payload = {
+      question_id: selectedQuestionId,
+      field_key: fieldKey,
+      score,
+      min_match: minMatch,
+      keywords: keywordsToStorageText(keywordsArray),
+      feedback: rubricForm.feedback.trim() || null,
+    };
+
+    setRubricSubmitting(true);
 
     try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return parsed.join(", ");
-      return value;
-    } catch {
-      return value;
+      if (editingRubricId) {
+        await api.put(`/api/quiz/rubrics/${editingRubricId}`, payload);
+        alert("Rubrik berhasil diupdate");
+      } else {
+        await api.post("/api/quiz/rubrics", payload);
+        alert("Rubrik berhasil ditambahkan");
+      }
+
+      await fetchRubriksForQuestion(selectedQuestionId, question?.answer_fields);
+      setRubricForm(emptyRubricForm(fields[0]?.value || DEFAULT_FIELD.value));
+      setEditingRubricId(null);
+    } catch (err) {
+      console.error("Gagal simpan rubrik:", err);
+      alert(getErrorMessage(err, "Gagal menyimpan rubrik"));
+    } finally {
+      setRubricSubmitting(false);
+    }
+  };
+
+  const handleEditRubrik = (question, rubric) => {
+    const fields = ensureFieldExists(
+      parseAvailableFields(question.answer_fields),
+      rubric.field_key
+    );
+
+    setFieldsForQuestion(question.id, fields);
+    setSelectedQuestionId(question.id);
+    setEditingRubricId(rubric.id);
+    setRubricForm({
+      field_key: String(
+        rubric.field_key || fields[0]?.value || DEFAULT_FIELD.value
+      ),
+      score: Math.min(4, Math.max(1, Number(rubric.score) || 1)),
+      min_match: Math.max(1, Number(rubric.min_match) || 1),
+      keywords: keywordsToInputText(rubric.keywords),
+      feedback: rubric.feedback || "",
+    });
+  };
+
+  const handleHapusRubrik = async (questionId, rubricId) => {
+    if (!window.confirm("Yakin hapus rubrik ini?")) return;
+
+    try {
+      await api.delete(`/api/quiz/rubrics/${rubricId}`);
+
+      if (String(editingRubricId) === String(rubricId)) {
+        setEditingRubricId(null);
+        const question = getQuestionById(questionId);
+        const fields = getFieldsForQuestion(question);
+        setRubricForm(emptyRubricForm(fields[0]?.value || DEFAULT_FIELD.value));
+      }
+
+      const question = getQuestionById(questionId);
+      await fetchRubriksForQuestion(questionId, question?.answer_fields);
+      alert("Rubrik berhasil dihapus");
+    } catch (err) {
+      console.error("Gagal hapus rubrik:", err);
+      alert(getErrorMessage(err, "Gagal menghapus rubrik"));
     }
   };
 
@@ -272,7 +776,7 @@ export default function KelolaQuizGuru() {
             <h1 className="kelolaquiz-title">Kelola LKPD</h1>
             <p className="kelolaquiz-desc">
               Atur judul, pendahuluan LKPD, soal, kolom jawaban siswa, gambar
-              soal, dan tipe jawaban siswa.
+              soal, rubrik penilaian, dan tipe jawaban siswa.
             </p>
           </div>
 
@@ -307,6 +811,7 @@ export default function KelolaQuizGuru() {
                 <label>Pertemuan</label>
                 <input
                   type="number"
+                  min="1"
                   placeholder="Masukkan nomor pertemuan"
                   value={pertemuan}
                   onChange={(e) => handlePertemuanChange(e.target.value)}
@@ -364,6 +869,7 @@ Konteks Penggunaan`}
                   type="file"
                   accept="image/*"
                   onChange={handleUploadGambar}
+                  disabled={uploading}
                 />
 
                 {uploading && (
@@ -400,13 +906,17 @@ Konteks Penggunaan`}
           </aside>
 
           <main className="kelolaquiz-content">
-            {groupedQuestions.length === 0 ? (
+            {pageLoading ? (
+              <div className="empty-box">
+                <div className="empty-illustration">⏳</div>
+                <h3>Memuat data...</h3>
+                <p>Sedang mengambil soal dan rubrik.</p>
+              </div>
+            ) : groupedQuestions.length === 0 ? (
               <div className="empty-box">
                 <div className="empty-illustration">📝</div>
                 <h3>Belum ada soal</h3>
-                <p>
-                  Tambahkan konten untuk mulai mengelola LKPD per pertemuan.
-                </p>
+                <p>Tambahkan konten untuk mulai mengelola LKPD per pertemuan.</p>
               </div>
             ) : (
               <>
@@ -414,7 +924,8 @@ Konteks Penggunaan`}
                   <div>
                     <h2>Daftar Konten per Pertemuan</h2>
                     <p className="detail-subtitle">
-                      Klik setiap pertemuan untuk membuka pendahuluan dan soal.
+                      Klik setiap pertemuan untuk membuka pendahuluan, soal, dan
+                      rubrik.
                     </p>
                   </div>
                 </div>
@@ -424,9 +935,8 @@ Konteks Penggunaan`}
                     <div key={group.pertemuan} className="accordion-group">
                       <button
                         type="button"
-                        className={`accordion-header ${
-                          openPertemuan[group.pertemuan] ? "active" : ""
-                        }`}
+                        className={`accordion-header ${openPertemuan[group.pertemuan] ? "active" : ""
+                          }`}
                         onClick={() => togglePertemuan(group.pertemuan)}
                       >
                         <div className="accordion-header-left">
@@ -442,9 +952,8 @@ Konteks Penggunaan`}
                             {group.items.length} soal
                           </span>
                           <span
-                            className={`accordion-arrow ${
-                              openPertemuan[group.pertemuan] ? "open" : ""
-                            }`}
+                            className={`accordion-arrow ${openPertemuan[group.pertemuan] ? "open" : ""
+                              }`}
                           >
                             ▼
                           </span>
@@ -499,67 +1008,369 @@ Konteks Penggunaan`}
                           </div>
 
                           <div className="question-list">
-                            {group.items.map((q, index) => (
-                              <div key={q.id} className="question-card">
-                                <div className="question-card-head">
-                                  <h3>Soal {index + 1}</h3>
-                                  <span className="question-number">
-                                    #{index + 1}
-                                  </span>
-                                </div>
+                            {group.items.map((q, index) => {
+                              const fieldsForThisQuestion = getFieldsForQuestion(q);
+                              const rubriksForThisQuestion =
+                                sortRubricsByFieldOrder(
+                                  rubriksPerSoal[q.id] || [],
+                                  q.answer_fields
+                                );
+                              const isLoadingRubriks =
+                                loadingRubriks[q.id] || false;
+                              const isRubrikListOpen = Boolean(
+                                openRubrikList[q.id]
+                              );
 
-                                <div className="question-group">
-                                  <label>Pertanyaan</label>
-                                  <div className="readonly-box pre-line">
-                                    {q.question}
-                                  </div>
-                                </div>
-
-                                <div className="question-group">
-                                  <label>Kolom Jawaban Siswa</label>
-                                  <div className="readonly-box">
-                                    {getAnswerFieldsText(q.answer_fields)}
-                                  </div>
-                                </div>
-
-                                <div className="question-group">
-                                  <label>Informasi Soal</label>
-                                  <div className="meta-inline">
-                                    <span>Pertemuan {q.pertemuan}</span>
-                                    <span>
-                                      {q.image_url
-                                        ? "Ada gambar"
-                                        : "Tanpa gambar"}
-                                    </span>
-                                    <span>
-                                      Jawaban:{" "}
-                                      {getAnswerTypeText(q.answer_type)}
+                              return (
+                                <div key={q.id} className="question-card">
+                                  <div className="question-card-head">
+                                    <h3>Soal {index + 1}</h3>
+                                    <span className="question-number">
+                                      #{index + 1}
                                     </span>
                                   </div>
-                                </div>
 
-                                {q.image_url && (
                                   <div className="question-group">
-                                    <label>Gambar Soal</label>
-                                    <img
-                                      src={q.image_url}
-                                      alt={`Soal ${index + 1}`}
-                                      className="quiz-preview-img"
-                                    />
+                                    <label>Pertanyaan</label>
+                                    <div className="readonly-box pre-line">
+                                      {q.question}
+                                    </div>
                                   </div>
-                                )}
 
-                                <div className="question-action">
-                                  <button
-                                    type="button"
-                                    className="btn-delete"
-                                    onClick={() => handleDelete(q.id)}
-                                  >
-                                    Hapus Soal
-                                  </button>
+                                  <div className="question-group">
+                                    <label>Kolom Jawaban Siswa</label>
+                                    <div className="readonly-box">
+                                      {getAnswerFieldsText(q.answer_fields)}
+                                    </div>
+                                  </div>
+
+                                  <div className="question-group">
+                                    <label>Informasi Soal</label>
+                                    <div className="meta-inline">
+                                      <span>Pertemuan {q.pertemuan}</span>
+                                      <span>
+                                        {q.image_url
+                                          ? "Ada gambar"
+                                          : "Tanpa gambar"}
+                                      </span>
+                                      <span>
+                                        Jawaban: {getAnswerTypeText(q.answer_type)}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {q.image_url && (
+                                    <div className="question-group">
+                                      <label>Gambar Soal</label>
+                                      <img
+                                        src={q.image_url}
+                                        alt={`Soal ${index + 1}`}
+                                        className="quiz-preview-img"
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div className="rubrik-section">
+                                    <div className="rubrik-header">
+                                      <h4>📋 Rubrik Penilaian</h4>
+                                      <div style={{ display: "flex", gap: "8px" }}>
+                                        <button
+                                          type="button"
+                                          className="btn-rubrik-add"
+                                          onClick={() => handleOpenRubrikForm(q)}
+                                          disabled={rubricSubmitting}
+                                        >
+                                          + Tambah Rubrik
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          className="btn-rubrik-add"
+                                          onClick={() => toggleRubrikList(q.id)}
+                                          style={{ background: "#eef2f7" }}
+                                        >
+                                          {isRubrikListOpen
+                                            ? "🙈 Sembunyikan"
+                                            : `👁️ Lihat (${rubriksForThisQuestion.length})`}
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          className="btn-rubrik-add"
+                                          onClick={() =>
+                                            fetchRubriksForQuestion(
+                                              q.id,
+                                              q.answer_fields
+                                            )
+                                          }
+                                          style={{ background: "#eef2f7" }}
+                                          disabled={isLoadingRubriks}
+                                        >
+                                          {isLoadingRubriks
+                                            ? "⏳ Memuat"
+                                            : "🔄 Refresh"}
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {selectedQuestionId === q.id && (
+                                      <div className="rubrik-form">
+                                        <div className="rubrik-form-grid">
+                                          <div className="form-group">
+                                            <label>Field Key</label>
+                                            <select
+                                              value={rubricForm.field_key}
+                                              onChange={(e) =>
+                                                updateRubricForm({
+                                                  field_key: e.target.value,
+                                                })
+                                              }
+                                              disabled={rubricSubmitting}
+                                            >
+                                              {fieldsForThisQuestion.map((field) => (
+                                                <option
+                                                  key={field.value}
+                                                  value={field.value}
+                                                >
+                                                  {field.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <small>
+                                              Pilih kolom jawaban yang akan dinilai
+                                              dari soal ini.
+                                            </small>
+                                          </div>
+
+                                          <div className="form-group">
+                                            <label>Skor</label>
+                                            <select
+                                              value={String(rubricForm.score)}
+                                              onChange={(e) =>
+                                                updateRubricForm({
+                                                  score: Number(e.target.value),
+                                                })
+                                              }
+                                              disabled={rubricSubmitting}
+                                            >
+                                              <option value="4">
+                                                4 (Sangat Baik)
+                                              </option>
+                                              <option value="3">3 (Baik)</option>
+                                              <option value="2">2 (Cukup)</option>
+                                              <option value="1">
+                                                1 (Perlu Perbaikan)
+                                              </option>
+                                            </select>
+                                          </div>
+
+                                          <div className="form-group">
+                                            <label>Minimal Keyword Cocok</label>
+                                            <input
+                                              type="number"
+                                              min="1"
+                                              max={currentKeywordCount || undefined}
+                                              value={rubricForm.min_match}
+                                              onChange={(e) =>
+                                                updateRubricForm({
+                                                  min_match: Number(e.target.value),
+                                                })
+                                              }
+                                              disabled={rubricSubmitting}
+                                            />
+                                            <small>
+                                              Jumlah keyword saat ini:{" "}
+                                              {currentKeywordCount}.
+                                            </small>
+                                          </div>
+
+                                          <div className="form-group full-width">
+                                            <label>
+                                              Keywords (pisahkan dengan koma)
+                                            </label>
+                                            <textarea
+                                              placeholder="hemat air, keran terbuka, pemborosan"
+                                              value={rubricForm.keywords}
+                                              onChange={(e) =>
+                                                updateRubricForm({
+                                                  keywords: e.target.value,
+                                                })
+                                              }
+                                              disabled={rubricSubmitting}
+                                            />
+                                            <small>
+                                              Wajib diisi agar penilaian otomatis
+                                              tidak salah.
+                                            </small>
+                                          </div>
+
+                                          <div className="form-group full-width">
+                                            <label>Feedback Otomatis</label>
+                                            <textarea
+                                              placeholder="Feedback yang akan muncul jika rubrik ini terpenuhi"
+                                              value={rubricForm.feedback}
+                                              onChange={(e) =>
+                                                updateRubricForm({
+                                                  feedback: e.target.value,
+                                                })
+                                              }
+                                              disabled={rubricSubmitting}
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="rubrik-form-actions">
+                                          <button
+                                            type="button"
+                                            className="btn-rubrik-save"
+                                            onClick={handleTambahRubrik}
+                                            disabled={rubricSubmitting}
+                                          >
+                                            {rubricSubmitting
+                                              ? "Menyimpan..."
+                                              : editingRubricId
+                                                ? "Update Rubrik"
+                                                : "Tambah Rubrik"}
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            className="btn-rubrik-cancel"
+                                            onClick={() => resetRubricForm(q.id)}
+                                            disabled={rubricSubmitting}
+                                          >
+                                            Batal
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {!isRubrikListOpen ? (
+                                      <p
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#6b7280",
+                                          padding: "10px 0 0",
+                                          margin: 0,
+                                        }}
+                                      >
+                                        Daftar rubrik disembunyikan. Total rubrik:{" "}
+                                        {rubriksForThisQuestion.length}. Klik
+                                        "Lihat" jika ingin mengedit atau
+                                        menghapus.
+                                      </p>
+                                    ) : (
+                                      <div className="rubrik-list">
+                                        <h5>Daftar Rubrik</h5>
+
+                                        {isLoadingRubriks ? (
+                                          <p
+                                            style={{
+                                              fontSize: "12px",
+                                              color: "#6b7280",
+                                              padding: "8px 0",
+                                            }}
+                                          >
+                                            ⏳ Memuat rubrik...
+                                          </p>
+                                        ) : rubriksForThisQuestion.length === 0 ? (
+                                          <p
+                                            style={{
+                                              fontSize: "12px",
+                                              color: "#6b7280",
+                                              padding: "8px 0",
+                                            }}
+                                          >
+                                            Belum ada rubrik untuk soal ini. Klik
+                                            "+ Tambah Rubrik" untuk menambahkan.
+                                          </p>
+                                        ) : (
+                                          rubriksForThisQuestion.map(
+                                            (rubric, rubricIndex) => (
+                                              <div
+                                                key={rubric.id}
+                                                className="rubrik-item"
+                                              >
+                                                <div className="rubrik-item-info">
+                                                  <span className="rubrik-order">
+                                                    {rubricIndex + 1}
+                                                  </span>
+
+                                                  <span className="rubrik-field">
+                                                    {formatRubrikFieldLabel(
+                                                      rubric.field_key,
+                                                      fieldsForThisQuestion
+                                                    )}
+                                                  </span>
+
+                                                  <span className="rubrik-score">
+                                                    Skor: {rubric.score}
+                                                  </span>
+
+                                                  <span className="rubrik-minmatch">
+                                                    Min: {rubric.min_match}
+                                                  </span>
+
+                                                  <span className="rubrik-keywords">
+                                                    Keywords:{" "}
+                                                    {keywordsToInputText(
+                                                      rubric.keywords
+                                                    ) || "-"}
+                                                  </span>
+
+                                                  {rubric.feedback && (
+                                                    <span className="rubrik-feedback">
+                                                      💬 {rubric.feedback}
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                <div className="rubrik-item-actions">
+                                                  <button
+                                                    type="button"
+                                                    className="btn-rubrik-edit"
+                                                    onClick={() =>
+                                                      handleEditRubrik(q, rubric)
+                                                    }
+                                                    disabled={rubricSubmitting}
+                                                  >
+                                                    Edit
+                                                  </button>
+
+                                                  <button
+                                                    type="button"
+                                                    className="btn-rubrik-delete"
+                                                    onClick={() =>
+                                                      handleHapusRubrik(
+                                                        q.id,
+                                                        rubric.id
+                                                      )
+                                                    }
+                                                    disabled={rubricSubmitting}
+                                                  >
+                                                    Hapus
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            )
+                                          )
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="question-action">
+                                    <button
+                                      type="button"
+                                      className="btn-delete"
+                                      onClick={() => handleDelete(q.id)}
+                                    >
+                                      Hapus Soal
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}

@@ -50,9 +50,9 @@ export default function Home() {
               <h3>Fitur Website</h3>
               <ul>
                 <li>📚 Materi Interaktif</li>
-                <li>🧠 Kuis Otomatis</li>
+                <li>🧠 Auto Grading</li>
                 <li>🎨 Upload Karya</li>
-                <li>📊 Nilai Tersimpan</li>
+                <li>📊 Review Nilai</li>
               </ul>
             </div>
 

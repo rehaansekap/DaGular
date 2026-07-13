@@ -8,10 +8,12 @@ function NilaiQuizGuru() {
   const [loadingList, setLoadingList] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoGrading, setAutoGrading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [previewImage, setPreviewImage] = useState(null);
 
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const PASSING_SCORE = 3;
 
   const getImageUrl = (path) => {
     if (!path) return "";
@@ -19,52 +21,120 @@ function NilaiQuizGuru() {
     return `${API_URL}/${path}`;
   };
 
+  const safeJsonParse = (value, fallback = null) => {
+    if (!value) return fallback;
+    if (typeof value === "object") return value;
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  };
+
+  const formatKeyLabel = (key) => {
+    return String(key || "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const getAnswerStatusText = (score) => {
+    const numericScore = Number(score) || 0;
+
+    if (numericScore >= PASSING_SCORE) return "Tuntas";
+    if (numericScore > 0) return "Perlu revisi";
+    return "Belum sesuai";
+  };
+
   const renderStudentAnswer = (answerText) => {
     if (!answerText) return <i>Belum ada jawaban teks</i>;
 
-    try {
-      const parsed = JSON.parse(answerText);
+    const parsed = safeJsonParse(answerText);
 
-      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
-        return (
-          <div className="structured-answer">
-            {Object.entries(parsed).map(([key, value], index) => (
-              <div className="answer-item" key={index}>
-                <div className="answer-label">{key}</div>
-                <div className="answer-value">{value || "-"}</div>
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return (
+        <div className="nqg-structured-answer">
+          {Object.entries(parsed).map(([key, value], index) => (
+            <div className="nqg-answer-item" key={index}>
+              <div className="nqg-answer-label">{formatKeyLabel(key)}</div>
+              <div className="nqg-answer-value">
+                {typeof value === "object"
+                  ? JSON.stringify(value, null, 2)
+                  : value || "-"}
               </div>
-            ))}
-          </div>
-        );
-      }
-
-      if (Array.isArray(parsed)) {
-        return (
-          <div className="structured-answer">
-            {parsed.map((value, index) => (
-              <div className="answer-item" key={index}>
-                <div className="answer-label">Jawaban {index + 1}</div>
-                <div className="answer-value">{value || "-"}</div>
-              </div>
-            ))}
-          </div>
-        );
-      }
-    } catch (err) {
-      return answerText;
+            </div>
+          ))}
+        </div>
+      );
     }
 
-    return answerText;
+    if (Array.isArray(parsed)) {
+      return (
+        <div className="nqg-structured-answer">
+          {parsed.map((value, index) => (
+            <div className="nqg-answer-item" key={index}>
+              <div className="nqg-answer-label">Jawaban {index + 1}</div>
+              <div className="nqg-answer-value">{value || "-"}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return <div>{answerText}</div>;
+  };
+
+  const renderRubricDetail = (item) => {
+    const detail =
+      safeJsonParse(item.rubric_detail) ||
+      safeJsonParse(item.teacher_note)?.rubric_detail ||
+      null;
+
+    if (!detail || !Array.isArray(detail.fields)) return null;
+
+    return (
+      <div className="nqg-rubric-detail-box">
+        <h4>Hasil Penilaian Rubrik</h4>
+
+        {detail.fields.map((field, index) => (
+          <div className="nqg-rubric-detail-row" key={index}>
+            <div>
+              <strong>{formatKeyLabel(field.field_key)}</strong>
+              <p>
+                Keyword cocok:{" "}
+                {field.matched_keywords?.length > 0
+                  ? field.matched_keywords.join(", ")
+                  : "Tidak ada"}
+              </p>
+              <p>{field.feedback || "Belum ada feedback."}</p>
+            </div>
+
+            <span
+              className={
+                Number(field.score) >= PASSING_SCORE
+                  ? "nqg-rubric-score-pill nqg-passed"
+                  : "nqg-rubric-score-pill nqg-failed"
+              }
+            >
+              {field.score}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const loadResults = async () => {
     try {
       setLoadingList(true);
+
       const res = await fetch(`${API_URL}/api/quiz/results`);
       const data = await res.json();
+
       setResults(data.data || []);
     } catch (error) {
       console.error("Gagal mengambil hasil quiz:", error);
+      alert("Gagal mengambil daftar submission.");
     } finally {
       setLoadingList(false);
     }
@@ -73,23 +143,34 @@ function NilaiQuizGuru() {
   const loadDetail = async (resultId) => {
     try {
       setLoadingDetail(true);
+
       const res = await fetch(`${API_URL}/api/quiz/results/${resultId}`);
       const data = await res.json();
 
-      setSelectedResult(data.data.result);
+      const result = data.data?.result || null;
+      const answerList = data.data?.answers || [];
+
+      setSelectedResult(result);
+
       setAnswers(
-        (data.data.answers || []).map((item) => ({
+        answerList.map((item) => ({
           answer_id: item.id,
           question_id: item.question_id,
           question: item.question,
           answer_text: item.answer_text,
           answer_image: item.answer_image,
-          score: item.score || 0,
+          score: Number(item.score) || 0,
           teacher_note: item.teacher_note || "",
+          rubric_detail: item.rubric_detail || null,
+          is_passed:
+            item.is_passed !== undefined
+              ? Number(item.is_passed) === 1
+              : Number(item.score) >= PASSING_SCORE,
         }))
       );
     } catch (error) {
       console.error("Gagal mengambil detail hasil quiz:", error);
+      alert("Gagal mengambil detail submission.");
     } finally {
       setLoadingDetail(false);
     }
@@ -102,7 +183,11 @@ function NilaiQuizGuru() {
 
   const handleScoreChange = (index, value) => {
     const updated = [...answers];
-    updated[index].score = value;
+    const numericValue = Math.max(0, Math.min(4, Number(value) || 0));
+
+    updated[index].score = numericValue;
+    updated[index].is_passed = numericValue >= PASSING_SCORE;
+
     setAnswers(updated);
   };
 
@@ -114,6 +199,11 @@ function NilaiQuizGuru() {
 
   const totalScoreDraft = useMemo(() => {
     return answers.reduce((sum, item) => sum + (Number(item.score) || 0), 0);
+  }, [answers]);
+
+  const allQuestionsPassed = useMemo(() => {
+    if (answers.length === 0) return false;
+    return answers.every((item) => Number(item.score) >= PASSING_SCORE);
   }, [answers]);
 
   const pendingResults = useMemo(
@@ -132,6 +222,46 @@ function NilaiQuizGuru() {
     return results;
   }, [results, pendingResults, gradedResults, activeFilter]);
 
+  const handleAutoGrade = async () => {
+    if (!selectedResult) return;
+
+    const confirmAutoGrade = window.confirm(
+      "Nilai otomatis akan dihitung dari rubrik. Lanjutkan?"
+    );
+
+    if (!confirmAutoGrade) return;
+
+    try {
+      setAutoGrading(true);
+
+      const res = await fetch(
+        `${API_URL}/api/quiz/results/${selectedResult.id}/auto-grade`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal menilai otomatis.");
+      }
+
+      alert(data.message || "Penilaian otomatis berhasil.");
+
+      await loadResults();
+      await loadDetail(selectedResult.id);
+    } catch (error) {
+      console.error("Gagal menilai otomatis:", error);
+      alert(error.message || "Terjadi kesalahan saat menilai otomatis.");
+    } finally {
+      setAutoGrading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedResult) return;
 
@@ -139,10 +269,12 @@ function NilaiQuizGuru() {
       setSaving(true);
 
       const payload = {
+        passing_score: PASSING_SCORE,
         answers: answers.map((item) => ({
           answer_id: item.answer_id,
           score: Number(item.score) || 0,
           teacher_note: item.teacher_note || "",
+          is_passed: Number(item.score) >= PASSING_SCORE ? 1 : 0,
         })),
       };
 
@@ -158,15 +290,18 @@ function NilaiQuizGuru() {
       );
 
       const data = await res.json();
-      alert(data.message || "Nilai berhasil disimpan");
+
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal menyimpan nilai.");
+      }
+
+      alert(data.message || "Nilai berhasil disimpan.");
 
       await loadResults();
-      setSelectedResult(null);
-      setAnswers([]);
-      setActiveFilter("pending");
+      await loadDetail(selectedResult.id);
     } catch (error) {
       console.error("Gagal menyimpan nilai:", error);
-      alert("Terjadi kesalahan saat menyimpan nilai");
+      alert(error.message || "Terjadi kesalahan saat menyimpan nilai.");
     } finally {
       setSaving(false);
     }
@@ -178,53 +313,71 @@ function NilaiQuizGuru() {
   }, []);
 
   return (
-    <div className="nilaiquiz-page">
-      <div className="nilaiquiz-container">
-        <div className="nilaiquiz-hero">
+    <div className="nqg-page">
+      <div className="nqg-container">
+        <div className="nqg-hero">
           <div>
-            <span className="nilaiquiz-badge">Panel Guru</span>
-            <h1 className="nilaiquiz-title">Penilaian LKPD Siswa</h1>
-            <p className="nilaiquiz-desc">
-              Periksa jawaban teks maupun gambar siswa, beri nilai, lalu simpan penilaian.
+            <span className="nqg-badge">Panel Guru</span>
+            <h1 className="nqg-title">Penilaian LKPD Siswa</h1>
+            <p className="nqg-desc">
+              Periksa jawaban siswa, jalankan penilaian otomatis dari rubrik,
+              lalu pastikan siswa tuntas sebelum lanjut ke soal berikutnya.
             </p>
           </div>
 
-          <div className="nilaiquiz-summary">
-            <div className="summary-card">
+          <div className="nqg-summary">
+            <div className="nqg-summary-card">
               <span>Total</span>
               <strong>{results.length}</strong>
             </div>
-            <div className="summary-card">
+            <div className="nqg-summary-card">
               <span>Belum Dinilai</span>
               <strong>{pendingResults.length}</strong>
             </div>
-            <div className="summary-card">
+            <div className="nqg-summary-card">
               <span>Sudah Dinilai</span>
               <strong>{gradedResults.length}</strong>
             </div>
           </div>
         </div>
 
-        <div className="nilaiquiz-layout">
-          <aside className="nilaiquiz-sidebar">
-            <div className="sidebar-head">
+        <div className="nqg-layout">
+          <aside className="nqg-sidebar">
+            <div className="nqg-sidebar-head">
               <h2>Submission</h2>
 
-              <div className="filter-group">
+              <div className="nqg-filter-group">
                 <button
-                  className={activeFilter === "all" ? "filter-btn active" : "filter-btn"}
+                  type="button"
+                  className={
+                    activeFilter === "all"
+                      ? "nqg-filter-btn nqg-active"
+                      : "nqg-filter-btn"
+                  }
                   onClick={() => setActiveFilter("all")}
                 >
                   Semua
                 </button>
+
                 <button
-                  className={activeFilter === "pending" ? "filter-btn active" : "filter-btn"}
+                  type="button"
+                  className={
+                    activeFilter === "pending"
+                      ? "nqg-filter-btn nqg-active"
+                      : "nqg-filter-btn"
+                  }
                   onClick={() => setActiveFilter("pending")}
                 >
                   Belum
                 </button>
+
                 <button
-                  className={activeFilter === "graded" ? "filter-btn active" : "filter-btn"}
+                  type="button"
+                  className={
+                    activeFilter === "graded"
+                      ? "nqg-filter-btn nqg-active"
+                      : "nqg-filter-btn"
+                  }
                   onClick={() => setActiveFilter("graded")}
                 >
                   Selesai
@@ -233,46 +386,49 @@ function NilaiQuizGuru() {
             </div>
 
             {loadingList ? (
-              <p className="empty-text">Memuat data...</p>
+              <p className="nqg-empty-text">Memuat data...</p>
             ) : filteredResults.length === 0 ? (
-              <p className="empty-text">Tidak ada submission.</p>
+              <p className="nqg-empty-text">Tidak ada submission.</p>
             ) : (
-              <div className="submission-list">
+              <div className="nqg-submission-list">
                 {filteredResults.map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    className={`submission-card ${
-                      selectedResult?.id === item.id ? "active" : ""
-                    }`}
+                    className={`nqg-submission-card ${selectedResult?.id === item.id ? "nqg-active" : ""
+                      }`}
                     onClick={() => loadDetail(item.id)}
                   >
-                    <div className="submission-top">
+                    <div className="nqg-submission-top">
                       <h3>{item.student_name || `User #${item.user_id}`}</h3>
+
                       <span
                         className={
                           item.status === "graded"
-                            ? "status-badge graded"
-                            : "status-badge pending"
+                            ? "nqg-status-badge nqg-graded"
+                            : "nqg-status-badge nqg-pending"
                         }
                       >
                         {item.status === "graded" ? "Dinilai" : "Pending"}
                       </span>
                     </div>
 
-                    <div className="submission-meta">
+                    <div className="nqg-submission-meta">
                       <p>
                         <span>Pertemuan</span>
                         <strong>{item.pertemuan}</strong>
                       </p>
+
                       <p>
                         <span>Nilai</span>
                         <strong>{item.score ?? 0}</strong>
                       </p>
                     </div>
 
-                    <div className="submission-date">
-                      {new Date(item.created_at).toLocaleString("id-ID")}
+                    <div className="nqg-submission-date">
+                      {item.created_at
+                        ? new Date(item.created_at).toLocaleString("id-ID")
+                        : "-"}
                     </div>
                   </button>
                 ))}
@@ -280,24 +436,29 @@ function NilaiQuizGuru() {
             )}
           </aside>
 
-          <section className="nilaiquiz-content">
+          <section className="nqg-content">
             {!selectedResult ? (
-              <div className="empty-box">
-                <div className="empty-illustration">📄</div>
+              <div className="nqg-empty-box">
+                <div className="nqg-empty-illustration">📄</div>
                 <h3>Pilih submission siswa</h3>
-                <p>Jawaban siswa akan tampil di sini untuk diperiksa dan dinilai.</p>
+                <p>
+                  Jawaban siswa akan tampil di sini untuk diperiksa dan dinilai.
+                </p>
               </div>
             ) : loadingDetail ? (
-              <div className="empty-box">
+              <div className="nqg-empty-box">
                 <p>Memuat detail jawaban...</p>
               </div>
             ) : (
               <>
-                <div className="detail-header">
+                <div className="nqg-detail-header">
                   <div>
-                    <span className="detail-label">Detail LKPD</span>
-                    <h2>{selectedResult.student_name || `User #${selectedResult.user_id}`}</h2>
-                    <p className="detail-subtitle">
+                    <span className="nqg-detail-label">Detail LKPD</span>
+                    <h2>
+                      {selectedResult.student_name ||
+                        `User #${selectedResult.user_id}`}
+                    </h2>
+                    <p className="nqg-detail-subtitle">
                       Pertemuan {selectedResult.pertemuan} •{" "}
                       {selectedResult.status === "graded"
                         ? "Sudah dinilai"
@@ -305,73 +466,105 @@ function NilaiQuizGuru() {
                     </p>
                   </div>
 
-                  <button className="btn-secondary" onClick={handleCloseDetail}>
+                  <button
+                    type="button"
+                    className="nqg-btn-secondary"
+                    onClick={handleCloseDetail}
+                  >
                     Tutup
                   </button>
                 </div>
 
-                <div className="student-info-grid">
-                  <div className="info-card">
+                <div className="nqg-info-grid">
+                  <div className="nqg-info-card">
                     <span>Nama Siswa</span>
                     <strong>
-                      {selectedResult.student_name || `User #${selectedResult.user_id}`}
+                      {selectedResult.student_name ||
+                        `User #${selectedResult.user_id}`}
                     </strong>
                   </div>
-                  <div className="info-card">
+
+                  <div className="nqg-info-card">
                     <span>Pertemuan</span>
                     <strong>{selectedResult.pertemuan}</strong>
                   </div>
-                  <div className="info-card">
-                    <span>Status</span>
-                    <strong>
-                      {selectedResult.status === "graded" ? "Sudah dinilai" : "Belum dinilai"}
-                    </strong>
+
+                  <div className="nqg-info-card">
+                    <span>Ketuntasan</span>
+                    <strong>{allQuestionsPassed ? "Tuntas" : "Belum Tuntas"}</strong>
                   </div>
-                  <div className="info-card highlight">
+
+                  <div className="nqg-info-card nqg-highlight">
                     <span>Total Nilai</span>
                     <strong>{totalScoreDraft}</strong>
                   </div>
                 </div>
 
-                <div className="jawaban-list">
+                <div className="nqg-rule-box">
+                  <strong>Aturan PJBL:</strong> siswa boleh lanjut jika setiap
+                  soal atau bagian jawaban mendapatkan nilai minimal{" "}
+                  <b>{PASSING_SCORE}</b>. Nilai <b>3</b> dan <b>4</b> dianggap
+                  tuntas. Nilai <b>0</b>, <b>1</b>, dan <b>2</b> harus revisi.
+                </div>
+
+                <div className="nqg-answer-list">
                   {answers.map((item, index) => (
-                    <div className="jawaban-card" key={item.answer_id}>
-                      <div className="jawaban-card-head">
+                    <div className="nqg-answer-card" key={item.answer_id}>
+                      <div className="nqg-answer-card-head">
                         <div>
-                          <span className="question-count">Soal {index + 1}</span>
+                          <span className="nqg-question-count">
+                            Soal {index + 1}
+                          </span>
                           <h3>Pemeriksaan Jawaban</h3>
+
+                          <span
+                            className={
+                              Number(item.score) >= PASSING_SCORE
+                                ? "nqg-answer-status nqg-passed"
+                                : "nqg-answer-status nqg-failed"
+                            }
+                          >
+                            {getAnswerStatusText(item.score)}
+                          </span>
                         </div>
 
-                        <div className="score-inline">
+                        <div className="nqg-score-inline">
                           <label>Nilai</label>
                           <input
                             type="number"
                             min="0"
+                            max="4"
                             value={item.score}
-                            onChange={(e) => handleScoreChange(index, e.target.value)}
+                            onChange={(e) =>
+                              handleScoreChange(index, e.target.value)
+                            }
                           />
                         </div>
                       </div>
 
-                      <div className="jawaban-group">
+                      <div className="nqg-answer-group">
                         <label>Pertanyaan</label>
-                        <div className="readonly-box">{item.question || "-"}</div>
+                        <div className="nqg-readonly-box">
+                          {item.question || "-"}
+                        </div>
                       </div>
 
-                      <div className="jawaban-group">
+                      <div className="nqg-answer-group">
                         <label>Jawaban Teks Siswa</label>
-                        <div className="readonly-box answer-box">
+                        <div className="nqg-readonly-box nqg-answer-box">
                           {renderStudentAnswer(item.answer_text)}
                         </div>
                       </div>
 
                       {item.answer_image && (
-                        <div className="jawaban-group">
+                        <div className="nqg-answer-group">
                           <label>Jawaban Gambar Siswa</label>
                           <button
                             type="button"
-                            className="answer-image-btn"
-                            onClick={() => setPreviewImage(getImageUrl(item.answer_image))}
+                            className="nqg-answer-image-btn"
+                            onClick={() =>
+                              setPreviewImage(getImageUrl(item.answer_image))
+                            }
                           >
                             <img
                               src={getImageUrl(item.answer_image)}
@@ -382,29 +575,61 @@ function NilaiQuizGuru() {
                         </div>
                       )}
 
-                      <div className="jawaban-group">
-                        <label>Catatan Guru</label>
+                      {renderRubricDetail(item)}
+
+                      <div className="nqg-answer-group">
+                        <label>Catatan Guru / Feedback</label>
                         <textarea
                           placeholder="Tulis feedback untuk siswa..."
                           value={item.teacher_note}
-                          onChange={(e) => handleNoteChange(index, e.target.value)}
+                          onChange={(e) =>
+                            handleNoteChange(index, e.target.value)
+                          }
                         />
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="action-area">
-                  <div className="action-summary">
+                <div className="nqg-action-area">
+                  <div className="nqg-action-summary">
+                    <span>Status PJBL</span>
+                    <strong>
+                      {allQuestionsPassed
+                        ? "Boleh Lanjut"
+                        : "Belum Boleh Lanjut"}
+                    </strong>
+                  </div>
+
+                  <div className="nqg-action-summary">
                     <span>Total skor sementara</span>
                     <strong>{totalScoreDraft}</strong>
                   </div>
 
-                  <div className="action-buttons">
-                    <button className="btn-secondary" onClick={handleCloseDetail}>
+                  <div className="nqg-action-buttons">
+                    <button
+                      type="button"
+                      className="nqg-btn-secondary"
+                      onClick={handleCloseDetail}
+                    >
                       Tutup
                     </button>
-                    <button className="btn-primary" onClick={handleSave} disabled={saving}>
+
+                    <button
+                      type="button"
+                      className="nqg-btn-secondary"
+                      onClick={handleAutoGrade}
+                      disabled={autoGrading || saving}
+                    >
+                      {autoGrading ? "Menilai..." : "Nilai Otomatis Rubrik"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="nqg-btn-primary"
+                      onClick={handleSave}
+                      disabled={saving || autoGrading}
+                    >
                       {saving ? "Menyimpan..." : "Simpan Penilaian"}
                     </button>
                   </div>
@@ -416,9 +641,16 @@ function NilaiQuizGuru() {
       </div>
 
       {previewImage && (
-        <div className="image-modal" onClick={() => setPreviewImage(null)}>
-          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="image-modal-close" onClick={() => setPreviewImage(null)}>
+        <div className="nqg-image-modal" onClick={() => setPreviewImage(null)}>
+          <div
+            className="nqg-image-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="nqg-image-modal-close"
+              onClick={() => setPreviewImage(null)}
+            >
               ×
             </button>
             <img src={previewImage} alt="Preview jawaban siswa" />

@@ -20,6 +20,7 @@ app.use("/uploads", express.static("uploads"));
 
 const materiRoutes = require("./routes/materi");
 const quizRoutes = require("./routes/quiz");
+console.log("QUIZ ROUTES DIPAKAI DARI:", require.resolve("./routes/quiz"));
 const authRoutes = require("./routes/auth");
 const karyaRoutes = require("./routes/karya");
 const proyekRoutes = require("./routes/proyek");

@@ -82,3 +82,36 @@
     width: 100%;
   }
 }
+
+.quiz-score-box.result-passed {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+}
+
+.quiz-score-box.result-failed {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+}
+
+.result-score-detail {
+  margin: 20px auto 0;
+  width: fit-content;
+  min-width: 110px;
+  background: #ffffff;
+  border: 1px solid #dde3ec;
+  border-radius: 16px;
+  padding: 12px 18px;
+}
+
+.result-score-detail span {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
+}
+
+.result-score-detail strong {
+  display: block;
+  font-size: 26px;
+  color: #2f3137;
+}
