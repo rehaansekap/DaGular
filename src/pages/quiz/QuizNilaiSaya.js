@@ -3,7 +3,7 @@ import "../../style/QuizNilaiSaya.css";
 
 function QuizNilaiSaya() {
   const user_id = localStorage.getItem("user_id");
-  const API_URL = "http://localhost:5000";
+  const API_URL = process.env.REACT_APP_API_URL || "";
   const PASSING_SCORE = 3;
 
   const [results, setResults] = useState([]);
