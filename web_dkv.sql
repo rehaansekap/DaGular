@@ -253,7 +253,8 @@ CREATE TABLE `quiz_results` (
   `status` enum('pending','graded','in_progress','completed','needs_review','revision') DEFAULT 'pending',
   `grading_type` varchar(20) DEFAULT 'auto',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT NULL
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
