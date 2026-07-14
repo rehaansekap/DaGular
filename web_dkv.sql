@@ -153,7 +153,9 @@ CREATE TABLE `questions` (
   `answer_type` enum('text','image','text_image') DEFAULT 'text',
   `pendahuluan_lkpd` text DEFAULT NULL,
   `judul_lkpd` varchar(255) DEFAULT NULL,
-  `answer_fields` text DEFAULT NULL
+  `answer_fields` text DEFAULT NULL,
+  `max_score` int(11) DEFAULT 4,
+  `passing_score` int(11) DEFAULT 3
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -187,8 +189,16 @@ CREATE TABLE `quiz_answers` (
   `id` int(11) NOT NULL,
   `result_id` int(11) DEFAULT NULL,
   `question_id` int(11) DEFAULT NULL,
+  `attempt_number` int(11) DEFAULT 1,
   `answer_text` text DEFAULT NULL,
   `answer_image` varchar(255) DEFAULT NULL,
+  `auto_score` int(11) DEFAULT 0,
+  `final_score` int(11) DEFAULT 0,
+  `auto_note` text DEFAULT NULL,
+  `matched_keywords` text DEFAULT NULL,
+  `grading_type` varchar(20) DEFAULT 'auto',
+  `review_status` enum('completed','revision','needs_review','not_graded') DEFAULT 'completed',
+  `is_latest` tinyint(1) DEFAULT 1,
   `score` int(11) DEFAULT 0,
   `teacher_note` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -215,8 +225,16 @@ CREATE TABLE `quiz_results` (
   `user_id` int(11) DEFAULT NULL,
   `pertemuan` int(11) DEFAULT NULL,
   `score` int(11) DEFAULT NULL,
-  `status` enum('pending','graded') DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `auto_total_score` int(11) DEFAULT 0,
+  `final_total_score` int(11) DEFAULT 0,
+  `total_questions` int(11) DEFAULT 0,
+  `completed_questions` int(11) DEFAULT 0,
+  `revision_questions` int(11) DEFAULT 0,
+  `needs_review_questions` int(11) DEFAULT 0,
+  `status` enum('pending','graded','in_progress','completed','needs_review','revision') DEFAULT 'pending',
+  `grading_type` varchar(20) DEFAULT 'auto',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
