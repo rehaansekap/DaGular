@@ -155,7 +155,9 @@ CREATE TABLE `questions` (
   `judul_lkpd` varchar(255) DEFAULT NULL,
   `answer_fields` text DEFAULT NULL,
   `max_score` int(11) DEFAULT 4,
-  `passing_score` int(11) DEFAULT 3
+  `passing_score` int(11) DEFAULT 3,
+  `is_required` tinyint(1) DEFAULT 1,
+  `stage_order` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -182,6 +184,22 @@ INSERT INTO `questions` (`id`, `question`, `image_url`, `created_at`, `pertemuan
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `question_rubrics`
+--
+
+CREATE TABLE `question_rubrics` (
+  `id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `field_key` varchar(255) NOT NULL,
+  `score` int(11) NOT NULL,
+  `min_match` int(11) DEFAULT 1,
+  `keywords` text DEFAULT NULL,
+  `feedback` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `quiz_answers`
 --
 
@@ -200,7 +218,8 @@ CREATE TABLE `quiz_answers` (
   `review_status` enum('completed','revision','needs_review','not_graded') DEFAULT 'completed',
   `is_latest` tinyint(1) DEFAULT 1,
   `score` int(11) DEFAULT 0,
-  `teacher_note` text DEFAULT NULL
+  `teacher_note` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -243,6 +262,29 @@ CREATE TABLE `quiz_results` (
 
 INSERT INTO `quiz_results` (`id`, `user_id`, `pertemuan`, `score`, `status`, `created_at`) VALUES
 (2, 1, 1, 0, 'pending', '2026-04-29 11:13:40');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_question_progress`
+--
+
+CREATE TABLE `student_question_progress` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `pertemuan` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `stage_order` int(11) DEFAULT 1,
+  `status` varchar(20) DEFAULT 'locked',
+  `latest_score` int(11) DEFAULT 0,
+  `attempt_count` int(11) DEFAULT 0,
+  `latest_answer_id` int(11) DEFAULT NULL,
+  `unlocked_at` timestamp NULL DEFAULT NULL,
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `feedback` text DEFAULT NULL,
+  `field_results` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -322,6 +364,13 @@ ALTER TABLE `proyek`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `question_rubrics`
+--
+ALTER TABLE `question_rubrics`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `question_id` (`question_id`);
+
+--
 -- Indexes for table `questions`
 --
 ALTER TABLE `questions`
@@ -339,6 +388,14 @@ ALTER TABLE `quiz_answers`
 ALTER TABLE `quiz_results`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `student_question_progress`
+--
+ALTER TABLE `student_question_progress`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_question` (`user_id`,`question_id`),
+  ADD KEY `question_id` (`question_id`);
 
 --
 -- Indexes for table `uploads`
@@ -388,6 +445,12 @@ ALTER TABLE `proyek`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT for table `question_rubrics`
+--
+ALTER TABLE `question_rubrics`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `questions`
 --
 ALTER TABLE `questions`
@@ -404,6 +467,12 @@ ALTER TABLE `quiz_answers`
 --
 ALTER TABLE `quiz_results`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `student_question_progress`
+--
+ALTER TABLE `student_question_progress`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `uploads`
@@ -452,10 +521,23 @@ ALTER TABLE `materi_konten`
   ADD CONSTRAINT `materi_konten_ibfk_1` FOREIGN KEY (`materi_id`) REFERENCES `materi` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `question_rubrics`
+--
+ALTER TABLE `question_rubrics`
+  ADD CONSTRAINT `fk_rubrics_question` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `quiz_results`
 --
 ALTER TABLE `quiz_results`
   ADD CONSTRAINT `quiz_results_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `student_question_progress`
+--
+ALTER TABLE `student_question_progress`
+  ADD CONSTRAINT `fk_progress_question` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_progress_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
