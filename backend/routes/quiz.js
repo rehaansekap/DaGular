@@ -77,7 +77,9 @@ function safeJsonParse(value, fallback = null) {
 }
 
 function toNumberOrDefault(value, defaultValue) {
-  if (value === undefined || value === null || value === "") return defaultValue;
+  if (value === undefined || value === null || value === "") {
+    return defaultValue;
+  }
 
   const numberValue = Number(value);
   return Number.isNaN(numberValue) ? defaultValue : numberValue;
@@ -192,6 +194,138 @@ function groupRubricsByField(rubrics = []) {
 }
 
 /* ================================
+   HELPER FEEDBACK DETAIL
+================================ */
+
+function formatReadableFieldName(value = "jawaban") {
+  return String(value || "jawaban")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function uniqueKeywordList(keywords = []) {
+  const seen = new Set();
+  const result = [];
+
+  keywords.forEach((keyword) => {
+    const cleanKeyword = String(keyword || "").trim();
+    const key = normalizeText(cleanKeyword);
+
+    if (!cleanKeyword || !key || seen.has(key)) return;
+
+    seen.add(key);
+    result.push(cleanKeyword);
+  });
+
+  return result;
+}
+
+function limitKeywords(keywords = [], limit = 6) {
+  return uniqueKeywordList(keywords).slice(0, limit);
+}
+
+function getExpectedKeywordsFromRubrics(fieldRubrics = []) {
+  const rubricsWithKeywords = fieldRubrics.filter((rubric) => {
+    return parseKeywords(rubric.keywords).length > 0;
+  });
+
+  if (rubricsWithKeywords.length === 0) return [];
+
+  const highestScore = Math.max(
+    ...rubricsWithKeywords.map((rubric) => Number(rubric.score) || 0)
+  );
+
+  const topKeywords = rubricsWithKeywords
+    .filter((rubric) => Number(rubric.score) === highestScore)
+    .flatMap((rubric) => parseKeywords(rubric.keywords));
+
+  const allKeywords = rubricsWithKeywords.flatMap((rubric) =>
+    parseKeywords(rubric.keywords)
+  );
+
+  return uniqueKeywordList(topKeywords.length > 0 ? topKeywords : allKeywords);
+}
+
+function getMissingKeywords(answerText, expectedKeywords = []) {
+  return uniqueKeywordList(expectedKeywords).filter((keyword) => {
+    return !keywordMatches(answerText, keyword);
+  });
+}
+
+function buildRevisionSuggestion({
+  fieldKey,
+  missingKeywords = [],
+  score = 0,
+  passingScore = 3,
+}) {
+  const fieldName = formatReadableFieldName(fieldKey);
+  const limitedMissing = limitKeywords(missingKeywords, 5);
+
+  if (limitedMissing.length > 0) {
+    return `Perbaiki bagian ${fieldName} dengan menambahkan unsur: ${limitedMissing.join(
+      ", "
+    )}. Jelaskan menggunakan kalimat sendiri, jangan hanya menulis kata kunci.`;
+  }
+
+  if (Number(score) < Number(passingScore)) {
+    return `Perjelas bagian ${fieldName}. Tambahkan alasan, contoh, atau hubungan jawaban dengan tugas desain yang sedang dikerjakan.`;
+  }
+
+  return `Bagian ${fieldName} sudah cukup. Jawaban dapat dibuat lebih kuat dengan penjelasan yang lebih rinci.`;
+}
+
+function buildDetailedFieldNote({
+  fieldKey,
+  score,
+  passingScore,
+  matchedKeywords = [],
+  missingKeywords = [],
+  rubricFeedback = "",
+}) {
+  const fieldName = formatReadableFieldName(fieldKey);
+  const matched = limitKeywords(matchedKeywords, 5);
+  const missing = limitKeywords(missingKeywords, 6);
+
+  if (Number(score) >= Number(passingScore)) {
+    if (missing.length > 0) {
+      return `${fieldName} sudah memenuhi nilai minimal. Jawaban sudah memuat unsur ${matched.join(
+        ", "
+      )}. Agar lebih lengkap, kamu masih bisa menambahkan unsur ${missing.join(
+        ", "
+      )}.`;
+    }
+
+    return (
+      rubricFeedback ||
+      `${fieldName} sudah sesuai dengan kriteria penilaian.`
+    );
+  }
+
+  if (matched.length === 0) {
+    if (missing.length > 0) {
+      return `${fieldName} masih perlu revisi. Sistem belum menemukan unsur utama yang diminta. Tambahkan unsur ${missing.join(
+        ", "
+      )}.`;
+    }
+
+    return `${fieldName} masih perlu revisi. Jawaban belum menunjukkan unsur yang sesuai dengan rubrik.`;
+  }
+
+  if (missing.length > 0) {
+    return `${fieldName} sudah memuat unsur ${matched.join(
+      ", "
+    )}, tetapi masih kurang pada unsur ${missing.join(", ")}.`;
+  }
+
+  return (
+    rubricFeedback ||
+    `${fieldName} sudah memiliki sebagian unsur yang sesuai, tetapi penjelasannya masih perlu diperjelas.`
+  );
+}
+
+/* ================================
    HELPER GAMBAR
 ================================ */
 
@@ -253,7 +387,10 @@ function hasMeaningfulAnswer(answerText, answerType = "text") {
   }
 
   if (answerType === "text_image") {
-    return normalizeText(parseAnswerText(answerText)) !== "" && hasUploadedImage(answerText);
+    return (
+      normalizeText(parseAnswerText(answerText)) !== "" &&
+      hasUploadedImage(answerText)
+    );
   }
 
   return normalizeText(parseAnswerText(answerText)) !== "";
@@ -317,7 +454,9 @@ function gradeImageAnswer(answerText, maxScore = 4) {
           fieldKey: "gambar_jawaban",
           score: 0,
           matchedKeywords: [],
+          missingKeywords: ["upload gambar jawaban"],
           note: "Siswa belum mengupload gambar jawaban.",
+          suggestion: "Upload gambar jawaban terlebih dahulu agar sistem dapat menyimpan jawaban.",
           reviewStatus: "revision",
           isPassed: false,
         },
@@ -336,8 +475,10 @@ function gradeImageAnswer(answerText, maxScore = 4) {
       {
         fieldKey: "gambar_jawaban",
         score: maxScore,
-        matchedKeywords: [],
+        matchedKeywords: ["gambar sudah diupload"],
+        missingKeywords: [],
         note: "Gambar jawaban sudah diupload.",
+        suggestion: "Jawaban gambar sudah tersimpan.",
         reviewStatus: "auto_graded_passed",
         isPassed: true,
       },
@@ -345,16 +486,33 @@ function gradeImageAnswer(answerText, maxScore = 4) {
   };
 }
 
-function gradeSingleField(answerText, fieldKey, fieldRubrics = [], passingScore = 3) {
+function gradeSingleField(
+  answerText,
+  fieldKey,
+  fieldRubrics = [],
+  passingScore = 3
+) {
   const answerSource = getFieldAnswer(answerText, fieldKey);
   const normalizedAnswer = normalizeText(answerSource);
+  const expectedKeywords = getExpectedKeywordsFromRubrics(fieldRubrics);
+  const missingKeywordsFromExpected = getMissingKeywords(
+    answerSource,
+    expectedKeywords
+  );
 
   if (!normalizedAnswer) {
     return {
       fieldKey,
       score: 0,
       matchedKeywords: [],
+      missingKeywords: limitKeywords(expectedKeywords, 8),
       note: "Jawaban pada bagian ini masih kosong.",
+      suggestion: buildRevisionSuggestion({
+        fieldKey,
+        missingKeywords: expectedKeywords,
+        score: 0,
+        passingScore,
+      }),
       reviewStatus: "revision",
       isPassed: false,
     };
@@ -365,7 +523,10 @@ function gradeSingleField(answerText, fieldKey, fieldRubrics = [], passingScore 
       fieldKey,
       score: 0,
       matchedKeywords: [],
+      missingKeywords: [],
       note: "Rubrik untuk bagian ini belum tersedia.",
+      suggestion:
+        "Guru perlu melengkapi rubrik agar sistem dapat memberi feedback otomatis yang lebih jelas.",
       reviewStatus: "needs_review",
       isPassed: false,
     };
@@ -382,7 +543,20 @@ function gradeSingleField(answerText, fieldKey, fieldRubrics = [], passingScore 
     fieldKey,
     score: 0,
     matchedKeywords: [],
-    note: "Jawaban ada, tetapi belum sesuai dengan keyword rubrik.",
+    missingKeywords: missingKeywordsFromExpected,
+    note: buildDetailedFieldNote({
+      fieldKey,
+      score: 0,
+      passingScore,
+      matchedKeywords: [],
+      missingKeywords: missingKeywordsFromExpected,
+    }),
+    suggestion: buildRevisionSuggestion({
+      fieldKey,
+      missingKeywords: missingKeywordsFromExpected,
+      score: 0,
+      passingScore,
+    }),
     reviewStatus: "revision",
     isPassed: false,
   };
@@ -393,38 +567,57 @@ function gradeSingleField(answerText, fieldKey, fieldRubrics = [], passingScore 
     if (keywords.length === 0) continue;
 
     const matchedKeywords = keywords.filter((keyword) => {
-      return keywordMatches(normalizedAnswer, keyword);
+      return keywordMatches(answerSource, keyword);
     });
 
     const minMatch = Math.max(1, Number(rubric.min_match) || 1);
+    const score = Number(rubric.score) || 0;
+    const rubricMatched = matchedKeywords.length >= minMatch;
 
-    if (matchedKeywords.length > bestPartialMatch.matchedKeywords.length) {
-      bestPartialMatch = {
+    const missingKeywords =
+      expectedKeywords.length > 0
+        ? getMissingKeywords(answerSource, expectedKeywords)
+        : getMissingKeywords(answerSource, keywords);
+
+    const candidateScore = rubricMatched ? score : 0;
+    const candidatePassed = rubricMatched && candidateScore >= passingScore;
+
+    const candidate = {
+      fieldKey,
+      score: candidateScore,
+      matchedKeywords,
+      missingKeywords,
+      note: buildDetailedFieldNote({
         fieldKey,
-        score: 0,
+        score: candidateScore,
+        passingScore,
         matchedKeywords,
-        note:
-          rubric.feedback ||
-          `Baru cocok ${matchedKeywords.length} keyword, belum memenuhi minimal ${minMatch} keyword.`,
-        reviewStatus: "revision",
-        isPassed: false,
-      };
+        missingKeywords,
+        rubricFeedback: rubric.feedback || "",
+      }),
+      suggestion: buildRevisionSuggestion({
+        fieldKey,
+        missingKeywords,
+        score: candidateScore,
+        passingScore,
+      }),
+      reviewStatus: candidatePassed ? "auto_graded_passed" : "revision",
+      isPassed: candidatePassed,
+    };
+
+    const currentBestMatchCount = bestPartialMatch.matchedKeywords.length;
+    const candidateMatchCount = candidate.matchedKeywords.length;
+
+    if (
+      candidateMatchCount > currentBestMatchCount ||
+      (candidateMatchCount === currentBestMatchCount &&
+        Number(candidate.score) > Number(bestPartialMatch.score))
+    ) {
+      bestPartialMatch = candidate;
     }
 
-    if (matchedKeywords.length >= minMatch) {
-      const score = Number(rubric.score) || 0;
-      const isPassed = score >= passingScore;
-
-      return {
-        fieldKey,
-        score,
-        matchedKeywords,
-        note:
-          rubric.feedback ||
-          `Kata kunci cocok: ${matchedKeywords.join(", ")}.`,
-        reviewStatus: isPassed ? "auto_graded_passed" : "revision",
-        isPassed,
-      };
+    if (rubricMatched) {
+      return candidate;
     }
   }
 
@@ -465,7 +658,10 @@ function autoGradeAnswer(answerText, rubrics = [], options = {}) {
           fieldKey: "gambar_jawaban",
           score: 0,
           matchedKeywords: [],
+          missingKeywords: ["upload gambar jawaban"],
           note: "Siswa belum mengupload gambar jawaban.",
+          suggestion:
+            "Upload gambar jawaban terlebih dahulu, lalu pastikan teks jawaban juga sudah diisi.",
           reviewStatus: "revision",
           isPassed: false,
         },
@@ -506,9 +702,13 @@ function autoGradeAnswer(answerText, rubrics = [], options = {}) {
     return item.matchedKeywords || [];
   });
 
+  const allMissingKeywords = fieldResults.flatMap((item) => {
+    return item.missingKeywords || [];
+  });
+
   const note = fieldResults
     .map((item) => {
-      const fieldName = String(item.fieldKey || "jawaban").replace(/_/g, " ");
+      const fieldName = formatReadableFieldName(item.fieldKey || "jawaban");
       return `${fieldName}: nilai ${item.score}. ${item.note}`;
     })
     .join("\n");
@@ -516,6 +716,7 @@ function autoGradeAnswer(answerText, rubrics = [], options = {}) {
   return {
     score: finalScore,
     matchedKeywords: allMatchedKeywords,
+    missingKeywords: allMissingKeywords,
     note,
     reviewStatus: allFieldsPassed ? "auto_graded_passed" : "revision",
     isPassed: allFieldsPassed,
@@ -537,6 +738,7 @@ async function gradeQuestionAnswer(question, answerText) {
       return {
         score: 0,
         matchedKeywords: [],
+        missingKeywords: [],
         note: "Bagian refleksi wajib diisi, tetapi tidak masuk penilaian.",
         reviewStatus: "revision",
         isPassed: false,
@@ -546,7 +748,9 @@ async function gradeQuestionAnswer(question, answerText) {
             fieldKey: "self_reflection",
             score: 0,
             matchedKeywords: [],
+            missingKeywords: ["isi refleksi"],
             note: "Refleksi belum diisi.",
+            suggestion: "Isi refleksi berdasarkan pengalaman belajar yang kamu rasakan.",
             reviewStatus: "not_graded",
             isPassed: false,
           },
@@ -557,6 +761,7 @@ async function gradeQuestionAnswer(question, answerText) {
     return {
       score: 0,
       matchedKeywords: [],
+      missingKeywords: [],
       note: answered
         ? "Refleksi berhasil disimpan. Bagian ini tidak masuk penilaian."
         : "Refleksi dilewati. Bagian ini tidak masuk penilaian.",
@@ -567,10 +772,12 @@ async function gradeQuestionAnswer(question, answerText) {
         {
           fieldKey: "self_reflection",
           score: 0,
-          matchedKeywords: [],
+          matchedKeywords: answered ? ["refleksi sudah diisi"] : [],
+          missingKeywords: [],
           note: answered
             ? "Refleksi sudah diisi dan tersimpan."
             : "Refleksi tidak diisi karena bagian ini opsional.",
+          suggestion: "Bagian ini tidak masuk penilaian.",
           reviewStatus: "not_graded",
           isPassed: true,
         },
@@ -646,6 +853,9 @@ async function updateStudentProgress({
   feedback,
   fieldResults,
 }) {
+  const finalStatus = passed ? "completed" : "unlocked";
+  const completedAt = passed ? new Date() : null;
+
   const [existing] = await db.query(
     `SELECT id
      FROM student_question_progress
@@ -656,12 +866,10 @@ async function updateStudentProgress({
     [Number(userId), Number(pertemuan), Number(questionId)]
   );
 
-  const completedAt = passed ? new Date() : null;
-
   if (existing.length > 0) {
     await db.query(
       `UPDATE student_question_progress
-       SET status = 'unlocked',
+       SET status = ?,
            latest_score = ?,
            attempt_count = attempt_count + 1,
            submitted_at = NOW(),
@@ -672,6 +880,7 @@ async function updateStudentProgress({
          AND pertemuan = ?
          AND question_id = ?`,
       [
+        finalStatus,
         Number(score) || 0,
         completedAt,
         feedback || "",
@@ -698,12 +907,13 @@ async function updateStudentProgress({
           feedback,
           field_results
         )
-       VALUES (?, ?, ?, ?, 'unlocked', ?, 1, NOW(), NOW(), ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), NOW(), ?, ?, ?)`,
       [
         Number(userId),
         Number(pertemuan),
         Number(questionId),
         Number(stageOrder),
+        finalStatus,
         Number(score) || 0,
         completedAt,
         feedback || "",
@@ -797,6 +1007,118 @@ async function getOrCreateQuizResult(userId, pertemuan) {
   return insertResult.insertId;
 }
 
+async function updateQuizResultSummary(resultId, pertemuan) {
+  const totalQuestions = await getGradedQuestionCount(pertemuan);
+
+  const [summaryRows] = await db.query(
+    `SELECT
+       COALESCE(SUM(CASE
+         WHEN COALESCE(q.max_score, 4) > 0
+          AND COALESCE(q.passing_score, 3) > 0
+         THEN COALESCE(qa.auto_score, 0) ELSE 0 END), 0) AS auto_raw_total_score,
+
+       COALESCE(SUM(CASE
+         WHEN COALESCE(q.max_score, 4) > 0
+          AND COALESCE(q.passing_score, 3) > 0
+         THEN COALESCE(qa.final_score, 0) ELSE 0 END), 0) AS final_raw_total_score,
+
+       COUNT(CASE
+         WHEN COALESCE(q.max_score, 4) > 0
+          AND COALESCE(q.passing_score, 3) > 0
+         THEN 1 END) AS graded_answer_count,
+
+       SUM(CASE
+         WHEN COALESCE(q.max_score, 4) > 0
+          AND COALESCE(q.passing_score, 3) > 0
+          AND qa.review_status = 'completed'
+         THEN 1 ELSE 0 END) AS completed_questions,
+
+       SUM(CASE
+         WHEN COALESCE(q.max_score, 4) > 0
+          AND COALESCE(q.passing_score, 3) > 0
+          AND qa.review_status = 'revision'
+         THEN 1 ELSE 0 END) AS revision_questions,
+
+       SUM(CASE
+         WHEN COALESCE(q.max_score, 4) > 0
+          AND COALESCE(q.passing_score, 3) > 0
+          AND qa.review_status = 'needs_review'
+         THEN 1 ELSE 0 END) AS needs_review_questions
+     FROM quiz_answers qa
+     JOIN questions q ON qa.question_id = q.id
+     WHERE qa.result_id = ?
+       AND qa.is_latest = 1`,
+    [Number(resultId)]
+  );
+
+  const summary = summaryRows[0] || {};
+
+  const autoRawTotalScore = Number(summary.auto_raw_total_score || 0);
+  const finalRawTotalScore = Number(summary.final_raw_total_score || 0);
+
+  const completedQuestions = Number(summary.completed_questions || 0);
+  const revisionQuestions = Number(summary.revision_questions || 0);
+  const needsReviewQuestions = Number(summary.needs_review_questions || 0);
+  const gradedAnswerCount = Number(summary.graded_answer_count || 0);
+
+  const denominator = totalQuestions > 0 ? totalQuestions : gradedAnswerCount;
+
+  const autoAverageScore =
+    denominator > 0 ? Number((autoRawTotalScore / denominator).toFixed(2)) : 0;
+
+  const finalAverageScore =
+    denominator > 0
+      ? Number((finalRawTotalScore / denominator).toFixed(2))
+      : 0;
+
+  let resultStatus = "in_progress";
+
+  if (totalQuestions > 0 && completedQuestions >= totalQuestions) {
+    resultStatus = "completed";
+  } else if (needsReviewQuestions > 0) {
+    resultStatus = "needs_review";
+  } else if (revisionQuestions > 0) {
+    resultStatus = "revision";
+  }
+
+  await db.query(
+    `UPDATE quiz_results
+     SET score = ?,
+         auto_total_score = ?,
+         final_total_score = ?,
+         total_questions = ?,
+         completed_questions = ?,
+         revision_questions = ?,
+         status = ?,
+         updated_at = NOW()
+     WHERE id = ?`,
+    [
+      finalAverageScore,
+      autoAverageScore,
+      finalAverageScore,
+      totalQuestions,
+      completedQuestions,
+      revisionQuestions,
+      resultStatus,
+      Number(resultId),
+    ]
+  );
+
+  return {
+    raw_total_score: finalRawTotalScore,
+    auto_raw_total_score: autoRawTotalScore,
+    score: finalAverageScore,
+    auto_total_score: autoAverageScore,
+    final_total_score: finalAverageScore,
+    total_questions: totalQuestions,
+    graded_answer_count: gradedAnswerCount,
+    completed_questions: completedQuestions,
+    revision_questions: revisionQuestions,
+    needs_review_questions: needsReviewQuestions,
+    status: resultStatus,
+  };
+}
+
 async function saveLatestQuizAnswer({
   userId,
   pertemuan,
@@ -883,121 +1205,6 @@ async function saveLatestQuizAnswer({
   return {
     resultId,
     answerId: answerInsert.insertId,
-  };
-}
-
-/* ================================
-   RINGKASAN NILAI
-   score = rata-rata nilai soal yang dinilai
-================================ */
-
-async function updateQuizResultSummary(resultId, pertemuan) {
-  const totalQuestions = await getGradedQuestionCount(pertemuan);
-
-  const [summaryRows] = await db.query(
-    `SELECT
-       COALESCE(SUM(CASE
-         WHEN COALESCE(q.max_score, 4) > 0
-          AND COALESCE(q.passing_score, 3) > 0
-         THEN COALESCE(qa.auto_score, 0) ELSE 0 END), 0) AS auto_raw_total_score,
-
-       COALESCE(SUM(CASE
-         WHEN COALESCE(q.max_score, 4) > 0
-          AND COALESCE(q.passing_score, 3) > 0
-         THEN COALESCE(qa.final_score, 0) ELSE 0 END), 0) AS final_raw_total_score,
-
-       COUNT(CASE
-         WHEN COALESCE(q.max_score, 4) > 0
-          AND COALESCE(q.passing_score, 3) > 0
-         THEN 1 END) AS graded_answer_count,
-
-       SUM(CASE
-         WHEN COALESCE(q.max_score, 4) > 0
-          AND COALESCE(q.passing_score, 3) > 0
-          AND qa.review_status = 'completed'
-         THEN 1 ELSE 0 END) AS completed_questions,
-
-       SUM(CASE
-         WHEN COALESCE(q.max_score, 4) > 0
-          AND COALESCE(q.passing_score, 3) > 0
-          AND qa.review_status = 'revision'
-         THEN 1 ELSE 0 END) AS revision_questions,
-
-       SUM(CASE
-         WHEN COALESCE(q.max_score, 4) > 0
-          AND COALESCE(q.passing_score, 3) > 0
-          AND qa.review_status = 'needs_review'
-         THEN 1 ELSE 0 END) AS needs_review_questions
-     FROM quiz_answers qa
-     JOIN questions q ON qa.question_id = q.id
-     WHERE qa.result_id = ?
-       AND qa.is_latest = 1`,
-    [Number(resultId)]
-  );
-
-  const summary = summaryRows[0] || {};
-
-  const autoRawTotalScore = Number(summary.auto_raw_total_score || 0);
-  const finalRawTotalScore = Number(summary.final_raw_total_score || 0);
-
-  const completedQuestions = Number(summary.completed_questions || 0);
-  const revisionQuestions = Number(summary.revision_questions || 0);
-  const needsReviewQuestions = Number(summary.needs_review_questions || 0);
-  const gradedAnswerCount = Number(summary.graded_answer_count || 0);
-
-  const denominator = totalQuestions > 0 ? totalQuestions : gradedAnswerCount;
-
-  const autoAverageScore =
-    denominator > 0 ? Number((autoRawTotalScore / denominator).toFixed(2)) : 0;
-
-  const finalAverageScore =
-    denominator > 0 ? Number((finalRawTotalScore / denominator).toFixed(2)) : 0;
-
-  let resultStatus = "in_progress";
-
-  if (totalQuestions > 0 && completedQuestions >= totalQuestions) {
-    resultStatus = "completed";
-  } else if (needsReviewQuestions > 0) {
-    resultStatus = "needs_review";
-  } else if (revisionQuestions > 0) {
-    resultStatus = "revision";
-  }
-
-  await db.query(
-    `UPDATE quiz_results
-     SET score = ?,
-         auto_total_score = ?,
-         final_total_score = ?,
-         total_questions = ?,
-         completed_questions = ?,
-         revision_questions = ?,
-         status = ?,
-         updated_at = NOW()
-     WHERE id = ?`,
-    [
-      finalAverageScore,
-      autoAverageScore,
-      finalAverageScore,
-      totalQuestions,
-      completedQuestions,
-      revisionQuestions,
-      resultStatus,
-      Number(resultId),
-    ]
-  );
-
-  return {
-    raw_total_score: finalRawTotalScore,
-    auto_raw_total_score: autoRawTotalScore,
-    score: finalAverageScore,
-    auto_total_score: autoAverageScore,
-    final_total_score: finalAverageScore,
-    total_questions: totalQuestions,
-    graded_answer_count: gradedAnswerCount,
-    completed_questions: completedQuestions,
-    revision_questions: revisionQuestions,
-    needs_review_questions: needsReviewQuestions,
-    status: resultStatus,
   };
 }
 
@@ -1189,7 +1396,7 @@ router.post("/check-question", async (req, res) => {
           : "Jawaban tuntas. Soal berikutnya terbuka."
         : nonGraded
         ? "Refleksi wajib diisi sebelum lanjut."
-        : "Jawaban belum tuntas. Perbaiki dulu sebelum lanjut.",
+        : "Jawaban belum tuntas. Perbaiki bagian yang masih kurang sebelum lanjut.",
       data: {
         score: finalScore,
         passing_score: passingScore,
@@ -1200,6 +1407,7 @@ router.post("/check-question", async (req, res) => {
         canContinue: isPassed,
         note: feedbackText,
         matchedKeywords: grade.matchedKeywords || [],
+        missingKeywords: grade.missingKeywords || [],
         fieldResults: grade.fieldResults || [],
         next_question: nextQuestion,
       },
@@ -1334,7 +1542,9 @@ router.post("/questions", async (req, res) => {
         ? pendahuluan_lkpd.trim()
         : existingIntro.pendahuluan_lkpd || null;
 
-    const finalAnswerType = ["text", "image", "text_image"].includes(answer_type)
+    const finalAnswerType = ["text", "image", "text_image"].includes(
+      answer_type
+    )
       ? answer_type
       : "text";
 
@@ -1439,7 +1649,9 @@ router.put("/questions/:id", async (req, res) => {
       });
     }
 
-    const finalAnswerType = ["text", "image", "text_image"].includes(answer_type)
+    const finalAnswerType = ["text", "image", "text_image"].includes(
+      answer_type
+    )
       ? answer_type
       : "text";
 
@@ -1879,7 +2091,9 @@ router.put("/results/:result_id/auto-grade", async (req, res) => {
 
       const answerPayload =
         row.answer_text ||
-        (row.answer_image ? JSON.stringify({ answer_image: row.answer_image }) : "");
+        (row.answer_image
+          ? JSON.stringify({ answer_image: row.answer_image })
+          : "");
 
       const grade = await gradeQuestionAnswer(question, answerPayload);
 
@@ -1934,7 +2148,10 @@ router.put("/results/:result_id/auto-grade", async (req, res) => {
       }
     }
 
-    const summary = await updateQuizResultSummary(resultId, quizResult.pertemuan);
+    const summary = await updateQuizResultSummary(
+      resultId,
+      quizResult.pertemuan
+    );
 
     return res.json({
       message: "Penilaian otomatis berhasil dijalankan.",
@@ -2034,7 +2251,7 @@ router.put("/results/:result_id/grade", async (req, res) => {
 
       await db.query(
         `UPDATE student_question_progress
-         SET status = 'unlocked',
+         SET status = ?,
              latest_score = ?,
              completed_at = CASE
                WHEN ? = 'completed' THEN NOW()
@@ -2045,6 +2262,7 @@ router.put("/results/:result_id/grade", async (req, res) => {
            AND pertemuan = ?
            AND question_id = ?`,
         [
+          reviewStatus === "completed" ? "completed" : "unlocked",
           score,
           reviewStatus,
           teacherNote || "",
@@ -2063,7 +2281,10 @@ router.put("/results/:result_id/grade", async (req, res) => {
       }
     }
 
-    const summary = await updateQuizResultSummary(resultId, quizResult.pertemuan);
+    const summary = await updateQuizResultSummary(
+      resultId,
+      quizResult.pertemuan
+    );
 
     await db.query(
       `UPDATE quiz_results

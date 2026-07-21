@@ -1,0 +1,632 @@
+.guru-evaluasi-page,
+.guru-evaluasi-page * {
+  box-sizing: border-box;
+}
+
+.guru-evaluasi-page {
+  min-height: 100vh;
+  padding: 28px 34px 60px 315px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+  font-family: "Poppins", sans-serif;
+  color: #1f2937;
+  overflow-x: hidden;
+}
+
+.guru-evaluasi-container {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ===== HEADER ===== */
+.guru-evaluasi-header {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 26px 28px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  margin-bottom: 18px;
+
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.guru-evaluasi-badge {
+  display: inline-flex;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: #fff7e8;
+  color: #c88219;
+  font-size: 11.5px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.guru-evaluasi-header h1 {
+  margin: 0 0 8px;
+  font-size: 25px;
+  font-weight: 900;
+  color: #172033;
+}
+
+.guru-evaluasi-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.guru-evaluasi-header button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 17px;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(216, 154, 52, 0.22);
+  transition: 0.2s ease;
+}
+
+.guru-evaluasi-header button:hover {
+  transform: translateY(-2px);
+}
+
+/* ===== FILTER PERTEMUAN ===== */
+.guru-evaluasi-meeting-filter {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 15px 17px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+  margin-bottom: 18px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.guru-evaluasi-meeting-filter span {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.guru-evaluasi-meeting-filter div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.guru-evaluasi-meeting-filter button {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.guru-evaluasi-meeting-filter button.active,
+.guru-evaluasi-meeting-filter button:hover {
+  border-color: #ebb85f;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(216, 154, 52, 0.18);
+}
+
+/* ===== SUMMARY ===== */
+.guru-evaluasi-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.guru-evaluasi-summary div {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+}
+
+.guru-evaluasi-summary span {
+  display: block;
+  font-size: 11.5px;
+  color: #9a6700;
+  font-weight: 900;
+  margin-bottom: 7px;
+}
+
+.guru-evaluasi-summary strong {
+  display: block;
+  font-size: 23px;
+  font-weight: 900;
+  color: #172033;
+}
+
+/* ===== REKAP GRID ===== */
+.guru-evaluasi-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.guru-evaluasi-card,
+.guru-evaluasi-sidebar,
+.guru-evaluasi-content {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  min-width: 0;
+}
+
+.guru-evaluasi-card-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.guru-evaluasi-card-title h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: #172033;
+}
+
+.guru-evaluasi-card-title span {
+  background: #fff7e8;
+  color: #9a6700;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* ===== RATA-RATA INDIKATOR ===== */
+.indicator-average-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.indicator-average-item {
+  border: 1px solid #edf0f5;
+  border-radius: 14px;
+  background: #fcfcfd;
+  padding: 12px;
+}
+
+.indicator-average-item strong {
+  display: block;
+  font-size: 12.8px;
+  font-weight: 900;
+  color: #172033;
+  line-height: 1.5;
+}
+
+.indicator-average-item p {
+  margin: 4px 0 9px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.indicator-bar {
+  width: 100%;
+  height: 9px;
+  background: #eef2f7;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.indicator-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  border-radius: 999px;
+}
+
+/* ===== KATEGORI ===== */
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #edf0f5;
+  border-radius: 13px;
+  padding: 11px 12px;
+  background: #fcfcfd;
+}
+
+.category-item span {
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.category-item strong {
+  color: #172033;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.guru-evaluasi-layout {
+  display: grid;
+  grid-template-columns: 315px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.guru-evaluasi-sidebar h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #172033;
+}
+
+.guru-evaluasi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guru-evaluasi-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #edf0f5;
+  background: #fcfcfd;
+  border-radius: 15px;
+  padding: 13px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: 0.2s ease;
+}
+
+.guru-evaluasi-item:hover,
+.guru-evaluasi-item.active {
+  border-color: #ebb85f;
+  background: #fffaf2;
+  transform: translateY(-1px);
+}
+
+.guru-evaluasi-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 9px;
+}
+
+.guru-evaluasi-item h3 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #172033;
+  line-height: 1.4;
+}
+
+.guru-evaluasi-item p {
+  margin: 0 0 5px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.guru-evaluasi-item p b {
+  color: #334155;
+}
+
+/* ===== STATUS ===== */
+.guru-evaluasi-status {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.guru-evaluasi-status.submitted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.guru-evaluasi-status.draft {
+  background: #fff7e8;
+  color: #9a6700;
+}
+
+.guru-evaluasi-status.empty {
+  background: #eef2f7;
+  color: #475569;
+}
+
+/* ===== EMPTY STATE ===== */
+.guru-evaluasi-empty,
+.guru-evaluasi-empty-box {
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.guru-evaluasi-empty {
+  padding: 20px 8px;
+}
+
+.guru-evaluasi-empty-box {
+  min-height: 420px;
+  border: 1px dashed #d8e0ea;
+  border-radius: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+/* ===== DETAIL ===== */
+.guru-evaluasi-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.guru-evaluasi-detail-header h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #172033;
+}
+
+.guru-evaluasi-detail-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.guru-evaluasi-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.guru-evaluasi-meta div {
+  background: #fffaf2;
+  border: 1px solid #f3eadc;
+  border-radius: 14px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.guru-evaluasi-meta span {
+  display: block;
+  font-size: 11.5px;
+  color: #9a6700;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.guru-evaluasi-meta strong {
+  display: block;
+  font-size: 12.5px;
+  color: #1f2937;
+  font-weight: 900;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+.guru-evaluasi-detail-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 13px;
+}
+
+.guru-evaluasi-detail-card {
+  border: 1px solid #edf0f5;
+  background: #fcfcfd;
+  border-radius: 16px;
+  padding: 15px;
+  min-width: 0;
+}
+
+.guru-evaluasi-detail-card.full {
+  grid-column: 1 / -1;
+}
+
+.guru-evaluasi-detail-card label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #172033;
+  margin-bottom: 8px;
+}
+
+.guru-evaluasi-detail-card p {
+  margin: 0;
+  background: #fffaf2;
+  border: 1px solid #f3eadc;
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #475569;
+  font-size: 12.8px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+/* ===== TABLE ===== */
+.guru-evaluasi-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #edf0f5;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.guru-evaluasi-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.guru-evaluasi-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.guru-evaluasi-table td {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+.guru-evaluasi-table tbody tr:nth-child(even) {
+  background: #fcfcfd;
+}
+
+.guru-evaluasi-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.guru-evaluasi-table th:first-child,
+.guru-evaluasi-table td:first-child {
+  width: 48px;
+  text-align: center;
+}
+
+.guru-evaluasi-table th:nth-child(4),
+.guru-evaluasi-table td:nth-child(4) {
+  width: 145px;
+  text-align: center;
+}
+
+.guru-evaluasi-table th:nth-child(5),
+.guru-evaluasi-table td:nth-child(5) {
+  width: 56px;
+  text-align: center;
+}
+
+.scale-badge {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 999px;
+  padding: 7px 9px;
+  min-width: 110px;
+  max-width: 120px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.scale-badge.scale-5 {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scale-badge.scale-4 {
+  background: #e7f8ee;
+  color: #047857;
+}
+
+.scale-badge.scale-3 {
+  background: #fff7e8;
+  color: #9a6700;
+}
+
+.scale-badge.scale-2 {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.scale-badge.scale-1 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.scale-badge.scale-empty {
+  background: #eef2f7;
+  color: #475569;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1180px) {
+  .guru-evaluasi-summary,
+  .guru-evaluasi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .guru-evaluasi-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .guru-evaluasi-page {
+    padding: 22px 16px 60px 105px;
+  }
+
+  .guru-evaluasi-header,
+  .guru-evaluasi-detail-header,
+  .guru-evaluasi-card-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .guru-evaluasi-meeting-filter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .guru-evaluasi-meeting-filter div {
+    justify-content: flex-start;
+  }
+
+  .guru-evaluasi-summary,
+  .guru-evaluasi-grid,
+  .guru-evaluasi-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .guru-evaluasi-table {
+    min-width: 760px;
+  }
+}

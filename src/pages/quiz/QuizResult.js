@@ -87,7 +87,7 @@ function QuizResult() {
         {isGraded && isPassed && (
           <Link to="/proyek">
             <button className="quiz-btn primary">
-              Lanjut ke Proyek
+              Lanjut ke Galeri Siswa →
             </button>
           </Link>
         )}
