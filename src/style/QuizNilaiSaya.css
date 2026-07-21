@@ -1,231 +1,402 @@
+.nilai-saya-page,
+.nilai-saya-page * {
+  box-sizing: border-box;
+}
+
 .nilai-saya-page {
   min-height: 100vh;
-
-  /* 🔥 FIX SIDEBAR */
-  padding: 20px 32px 60px 335px;
-
+  padding: 46px 34px 80px 335px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
   font-family: "Poppins", sans-serif;
   font-size: 14px;
+  color: #1f2937;
+  overflow-x: hidden;
 }
 
 .nilai-saya-container {
-  max-width: 1100px;
+  width: 100%;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
 /* ===== HEADER ===== */
+
 .nilai-saya-header {
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 34px;
 }
 
 .nilai-saya-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #2f3137;
-  margin-bottom: 6px;
+  margin: 0 0 10px;
+  color: #1f2937;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
 }
 
 .nilai-saya-desc {
-  max-width: 600px;
+  max-width: 720px;
   margin: 0 auto;
-  color: #6b7280;
-  font-size: 13px;
-  line-height: 1.6;
+  color: #64748b;
+  font-size: 14.5px;
+  line-height: 1.7;
 }
 
 /* ===== LAYOUT ===== */
+
 .nilai-saya-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 20px;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 22px;
   align-items: start;
 }
 
 /* ===== CARD ===== */
+
 .nilai-saya-sidebar,
 .nilai-saya-content {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 10px 28px rgba(42, 52, 70, 0.08);
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid #edf0f5;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
 }
 
-/* ===== TITLE ===== */
-.nilai-saya-sidebar h2,
+.nilai-saya-sidebar {
+  position: sticky;
+  top: 24px;
+}
+
+.nilai-saya-content {
+  min-width: 0;
+}
+
+/* ===== SIDEBAR TITLE ===== */
+
+.sidebar-title-row {
+  margin-bottom: 18px;
+}
+
+.sidebar-title-row h2,
 .nilai-saya-content h2 {
-  margin-bottom: 16px;
-  color: #2f3137;
-  font-size: 15px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 900;
 }
 
-/* ===== LIST ===== */
+.sidebar-title-row p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12.8px;
+  line-height: 1.6;
+}
+
+/* ===== LIST LKPD ===== */
+
 .submission-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .submission-card {
-  border: 1px solid #eee;
-  border-radius: 12px;
-  padding: 12px;
+  width: 100%;
+  border: 1px solid #edf0f5;
+  border-radius: 18px;
+  padding: 15px;
   cursor: pointer;
-  transition: 0.2s ease;
-  background: #fafafa;
+  transition: 0.22s ease;
+  background: #fcfcfd;
+  font-family: "Poppins", sans-serif;
+  text-align: left;
 }
 
 .submission-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  border-color: #f3d7aa;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.07);
 }
 
 .submission-card.active {
-  border-color: #f4c27a;
+  border-color: #ebb85f;
   background: #fffaf2;
+  box-shadow: 0 14px 28px rgba(216, 154, 52, 0.13);
+}
+
+.submission-card-top {
+  display: grid;
+  grid-template-columns: 1fr 54px;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 11px;
 }
 
 .submission-card h3 {
-  font-size: 13.5px;
-  margin-bottom: 6px;
-}
-
-.submission-card p {
-  font-size: 12px;
-  color: #555;
-  margin-bottom: 4px;
+  margin: 0 0 9px;
+  color: #111827;
+  font-size: 14.5px;
+  font-weight: 900;
   line-height: 1.4;
 }
 
-/* ===== STATUS ===== */
-.status {
-  font-weight: 700;
+.submission-date {
+  margin: 0;
+  color: #64748b;
   font-size: 12px;
-}
-
-.status.graded {
-  color: #2f9e44;
-}
-
-.status.pending {
-  color: #f08c00;
-}
-
-/* ===== DETAIL ===== */
-.detail-header {
-  margin-bottom: 16px;
-}
-
-.detail-meta {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.detail-meta p {
-  background: #fffaf2;
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: #444;
-  font-size: 12.5px;
-  border: 1px solid #f3eadc;
-}
-
-/* ===== JAWABAN ===== */
-.jawaban-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.jawaban-card {
-  border: 1px solid #eee;
-  border-radius: 14px;
-  padding: 16px;
-  background: #fcfcfc;
-}
-
-.jawaban-card h3 {
-  margin-bottom: 12px;
-  font-size: 13.5px;
-}
-
-.jawaban-group {
-  margin-bottom: 12px;
-}
-
-.jawaban-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-  font-size: 12.5px;
-}
-
-.readonly-box {
-  background: #fffaf2;
-  border: 1px solid #f3eadc;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 12.5px;
-  color: #444;
+  font-weight: 700;
   line-height: 1.5;
-  white-space: pre-line;
 }
 
-/* ===== IMAGE ===== */
-.quiz-image {
-  width: 100%;
-  max-width: 260px;
-  border-radius: 10px;
+.submission-hint {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 11.8px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.submission-hint.revision {
+  background: #fff7e8;
+  color: #9a6700;
+  border: 1px solid #f3d7aa;
+}
+
+.submission-hint.passed {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* ===== BADGE STATUS ===== */
+
+.nilai-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.nilai-status-badge.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.nilai-status-badge.revision {
+  background: #fff7e8;
+  color: #9a6700;
+}
+
+.nilai-status-badge.pending {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.submission-score-bubble {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.submission-score-bubble strong {
   display: block;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  color: #111827;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.submission-score-bubble small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 9.5px;
+  font-weight: 900;
+}
+
+.submission-score-bubble.passed {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.submission-score-bubble.revision {
+  background: #fff7e8;
+  border-color: #f3d7aa;
+}
+
+.submission-score-bubble.pending {
+  background: #eef2f7;
+  border-color: #e5e7eb;
 }
 
 /* ===== EMPTY ===== */
+
 .empty-box,
 .empty-text {
-  color: #777;
+  color: #64748b;
   text-align: center;
-  padding: 18px 10px;
+  padding: 24px 12px;
   font-size: 13px;
+  line-height: 1.7;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 992px) {
-  .nilai-saya-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-meta {
-    grid-template-columns: 1fr;
-  }
+.empty-box {
+  min-height: 360px;
+  border: 1px dashed #d8e0ea;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@media (max-width: 768px) {
-  .nilai-saya-page {
-    padding: 16px 14px 60px 105px;
-  }
-
-  .nilai-saya-title {
-    font-size: 22px;
-  }
-
-  .nilai-saya-sidebar,
-  .nilai-saya-content {
-    padding: 14px;
-  }
-
-  .jawaban-card {
-    padding: 14px;
-  }
+.empty-box p,
+.empty-text {
+  margin: 0;
 }
+
+/* ===== RESULT SUMMARY ===== */
+
+.result-summary-card {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 18px;
+  padding: 22px;
+  border-radius: 22px;
+  background: #fffaf2;
+  border: 1px solid #f3eadc;
+}
+
+.result-score-block {
+  min-height: 150px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #f3eadc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.result-score-block span {
+  color: #9a6700;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.result-score-block strong {
+  color: #1f2937;
+  font-size: 46px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.result-score-block small {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.result-score-block.passed {
+  border-color: #bbf7d0;
+  background: #f4fff7;
+}
+
+.result-score-block.revision {
+  border-color: #f3d7aa;
+  background: #ffffff;
+}
+
+.result-score-block.pending {
+  border-color: #dbe2ea;
+  background: #f8fafc;
+}
+
+.result-summary-content {
+  min-width: 0;
+}
+
+.result-summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.result-summary-top h2 {
+  margin: 0 0 5px;
+  color: #1f2937;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.result-summary-top p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.result-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.result-meta-grid div {
+  background: #ffffff;
+  border: 1px solid #f3eadc;
+  border-radius: 15px;
+  padding: 12px;
+}
+
+.result-meta-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: #9a6700;
+  font-size: 10.8px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.result-meta-grid strong {
+  display: block;
+  color: #374151;
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+/* ===== BANNER ===== */
 
 .pjbl-student-banner {
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  border-radius: 18px;
+  padding: 15px 16px;
+  margin-bottom: 18px;
   text-align: left;
   border: 1px solid transparent;
 }
@@ -234,12 +405,13 @@
   display: block;
   font-size: 14px;
   margin-bottom: 5px;
+  font-weight: 900;
 }
 
 .pjbl-student-banner p {
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 12.8px;
+  line-height: 1.7;
 }
 
 .pjbl-student-banner.passed {
@@ -254,12 +426,56 @@
   color: #7c4a00;
 }
 
+.banner-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+/* ===== JAWABAN ===== */
+
+.jawaban-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jawaban-card {
+  border: 1px solid #edf0f5;
+  border-radius: 20px;
+  padding: 20px;
+  background: #fcfcfd;
+}
+
 .student-question-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 12px;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.question-mini-label {
+  display: inline-flex;
+  margin-bottom: 6px;
+  color: #9a6700;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.student-question-head h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 900;
 }
 
 .student-score-status {
@@ -267,9 +483,10 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 5px 11px;
-  font-size: 11px;
-  font-weight: 800;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .student-score-status.passed {
@@ -287,46 +504,82 @@
   color: #dc2626;
 }
 
-.student-rubric-detail {
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 12px;
-}
-
-.student-rubric-detail h4 {
-  margin: 0 0 10px;
-  font-size: 12.5px;
+.student-score-status.neutral {
+  background: #eef2f7;
   color: #374151;
 }
 
-.student-rubric-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  background: #ffffff;
-  border: 1px solid #edf0f5;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 8px;
+.jawaban-group {
+  margin-bottom: 14px;
 }
 
-.student-rubric-row:last-child {
-  margin-bottom: 0;
-}
-
-.student-rubric-row strong {
+.jawaban-group label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 900;
   font-size: 12.5px;
-  color: #111827;
+  color: #334155;
 }
 
-.student-rubric-row p {
-  margin: 4px 0 0;
-  color: #6b7280;
-  font-size: 11.5px;
-  line-height: 1.5;
+.readonly-box {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 13px 14px;
+  font-size: 12.8px;
+  color: #374151;
+  line-height: 1.7;
+  white-space: pre-line;
 }
+
+.question-box {
+  background: #ffffff;
+  border-color: #edf0f5;
+}
+
+.answer-box {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.answer-box i {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ===== IMAGE ===== */
+
+.nilai-saya-page .quiz-image {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 14px;
+  display: block;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+}
+
+.answer-image-preview {
+  margin-top: 8px;
+}
+
+.answer-image-preview img {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  display: block;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+}
+
+.answer-image-preview p {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  color: #6b7280;
+}
+
+/* ===== FORMATTED ANSWER ===== */
 
 .formatted-answer {
   display: flex;
@@ -341,57 +594,235 @@
 .answer-row {
   background: #ffffff;
   border: 1px solid #edf0f5;
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 11px;
 }
 
 .answer-label {
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 900;
   color: #9a6700;
   margin-bottom: 6px;
 }
 
 .answer-value {
   color: #374151;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 12.6px;
+  line-height: 1.65;
   white-space: pre-line;
   word-break: break-word;
 }
 
 .normal-answer {
   color: #374151;
-  font-size: 12.5px;
+  font-size: 12.8px;
   line-height: 1.7;
   white-space: pre-line;
 }
 
-.answer-image-preview {
-  margin-top: 6px;
+/* ===== SCORE + REVISION NOTE ===== */
+
+.jawaban-footer-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.answer-image-preview img {
-  width: 100%;
-  max-width: 340px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+.jawaban-score-box,
+.revision-note {
+  border-radius: 16px;
+  padding: 13px 14px;
+  border: 1px solid #edf0f5;
+  background: #ffffff;
+}
+
+.jawaban-score-box span,
+.revision-note strong {
   display: block;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
-}
-
-.answer-image-preview p {
-  margin: 7px 0 0;
+  margin-bottom: 6px;
+  color: #64748b;
   font-size: 11.5px;
-  color: #6b7280;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.student-score-status.neutral {
-  background: #eef2f7;
-  color: #374151;
+.jawaban-score-box strong {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 900;
 }
 
-.answer-box i {
-  color: #9ca3af;
-  font-style: italic;
+.revision-note p {
+  margin: 0;
+  color: #475569;
+  font-size: 12.7px;
+  line-height: 1.7;
+}
+
+.revision-note.failed {
+  background: #fff7e8;
+  border-color: #f3d7aa;
+}
+
+.revision-note.failed strong {
+  color: #9a6700;
+}
+
+.revision-note.passed {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+}
+
+.revision-note.passed strong {
+  color: #166534;
+}
+
+/* ===== CTA REVISI ===== */
+
+.revision-cta-bar {
+  margin-top: 20px;
+  border-radius: 20px;
+  padding: 18px 20px;
+  background: #fffaf2;
+  border: 1px solid #f3eadc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.revision-cta-bar strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.revision-cta-bar p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12.8px;
+  line-height: 1.6;
+}
+
+.revision-cta-bar button {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #1f2937;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(216, 154, 52, 0.24);
+  transition: 0.22s ease;
+}
+
+.revision-cta-bar button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(216, 154, 52, 0.3);
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 1100px) {
+  .nilai-saya-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .result-summary-card {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .nilai-saya-page {
+    padding: 42px 28px 80px 295px;
+  }
+
+  .nilai-saya-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .nilai-saya-sidebar {
+    position: static;
+  }
+
+  .submission-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .result-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .nilai-saya-page {
+    padding: 34px 14px 70px 105px;
+  }
+
+  .nilai-saya-header {
+    margin-bottom: 28px;
+  }
+
+  .nilai-saya-title {
+    font-size: 26px;
+  }
+
+  .nilai-saya-desc {
+    font-size: 13.5px;
+  }
+
+  .nilai-saya-sidebar,
+  .nilai-saya-content {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .submission-list {
+    grid-template-columns: 1fr;
+  }
+
+  .result-summary-card {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .result-score-block {
+    min-height: 130px;
+  }
+
+  .result-score-block strong {
+    font-size: 40px;
+  }
+
+  .result-summary-top,
+  .student-question-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .jawaban-card {
+    padding: 16px;
+  }
+
+  .jawaban-footer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .revision-cta-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .revision-cta-bar button {
+    width: 100%;
+  }
 }

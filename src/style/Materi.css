@@ -1,117 +1,287 @@
+.materi-list-page,
+.materi-list-page * {
+  box-sizing: border-box;
+}
+
 .materi-list-page {
   min-height: 100vh;
-  padding: 42px 42px 60px 300px;
-  background: #f3f5f9;
+  padding: 46px 34px 80px 335px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
   font-family: "Poppins", sans-serif;
+  color: #1f2937;
+  overflow-x: hidden;
 }
 
 .materi-list-container {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
+/* ===== HEADER SERAGAM FITUR SISWA ===== */
+
 .materi-list-header {
-  background: #ffffff;
-  border-radius: 28px;
-  padding: 46px 42px;
-  margin-bottom: 28px;
+  margin-bottom: 34px;
   text-align: center;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.06);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 .materi-list-header span {
-  display: inline-flex;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: #fff8ef;
-  color: #b7791f;
-  font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 14px;
+  display: none;
 }
 
 .materi-list-header h1 {
-  margin: 0;
-  color: #111827;
-  font-size: 38px;
+  margin: 0 0 10px;
+  color: #1f2937;
+  font-size: 32px;
   font-weight: 900;
-  letter-spacing: -0.04em;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
 }
 
 .materi-list-header p {
-  margin: 10px 0 0;
-  color: #6b7280;
-  font-size: 15px;
+  max-width: 680px;
+  margin: 0 auto;
+  color: #64748b;
+  font-size: 14.5px;
+  line-height: 1.7;
 }
+
+/* ===== GRID MATERI 2x2 ===== */
 
 .materi-list-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: stretch;
 }
 
 .materi-list-card {
   position: relative;
-  min-height: 170px;
+  min-height: 230px;
   padding: 24px;
-  border-radius: 22px;
+  border-radius: 24px;
   background: #ffffff;
   text-decoration: none;
   color: #111827;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
-  transition: 0.22s ease;
+  border: 1px solid #edf0f5;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  transition: 0.24s ease;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.materi-list-card::before {
+  content: "";
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(244, 194, 122, 0.16);
+  transition: 0.24s ease;
+}
+
+.materi-list-card::after {
+  content: "";
+  position: absolute;
+  bottom: -55px;
+  left: -55px;
+  width: 125px;
+  height: 125px;
+  border-radius: 50%;
+  background: rgba(100, 116, 139, 0.07);
 }
 
 .materi-list-card:hover {
-  transform: translateY(-4px);
-  border-color: #f0c77f;
-  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.09);
+  transform: translateY(-5px);
+  border-color: #ebb85f;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.1);
+}
+
+.materi-list-card:hover::before {
+  transform: scale(1.12);
+  background: rgba(244, 194, 122, 0.24);
+}
+
+/* ===== CARD TOP ===== */
+
+.materi-card-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 18px;
 }
 
 .materi-list-badge {
   display: inline-flex;
+  width: fit-content;
   padding: 7px 12px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #d89a34, #c18422);
-  color: #ffffff;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #7c4a00;
   font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 18px;
+  font-weight: 900;
+}
+
+/* ===== CARD MAIN ===== */
+
+.materi-card-main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.materi-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: #fff7e8;
+  border: 1px solid #f3eadc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  box-shadow: 0 10px 22px rgba(244, 194, 122, 0.18);
 }
 
 .materi-list-card h3 {
   margin: 0;
   color: #111827;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.45;
 }
 
-.materi-list-action {
-  margin-top: 24px;
-  color: #b7791f;
+.materi-card-desc {
+  margin: 10px 0 0;
+  color: #64748b;
   font-size: 13px;
-  font-weight: 800;
+  line-height: 1.7;
 }
+
+/* ===== CTA ===== */
+
+.materi-list-action {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 15px;
+  border-radius: 15px;
+  background: #fffaf2;
+  border: 1px solid #f3eadc;
+  color: #9a6700;
+  font-size: 13px;
+  font-weight: 900;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: 0.22s ease;
+}
+
+.materi-list-action b {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.materi-list-card:hover .materi-list-action {
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #1f2937;
+  border-color: #ebb85f;
+}
+
+/* ===== EMPTY / LOADING ===== */
 
 .materi-empty,
 .materi-loading {
-  color: #6b7280;
+  grid-column: 1 / -1;
+  padding: 28px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px dashed #d8e0ea;
+  color: #64748b;
   font-size: 14px;
+  text-align: center;
+}
+
+.materi-loading {
+  max-width: 720px;
+  margin: 80px auto;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 992px) {
+  .materi-list-page {
+    padding: 42px 28px 80px 295px;
+  }
+
+  .materi-list-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
   .materi-list-page {
-    padding: 28px 18px 40px 112px;
+    padding: 34px 14px 70px 105px;
   }
 
   .materi-list-header {
-    padding: 34px 22px;
+    margin-bottom: 28px;
   }
 
   .materi-list-header h1 {
-    font-size: 28px;
+    font-size: 26px;
+  }
+
+  .materi-list-header p {
+    font-size: 13.5px;
+  }
+
+  .materi-list-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .materi-list-card {
+    min-height: 210px;
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .materi-card-main {
+    grid-template-columns: 48px 1fr;
+    gap: 13px;
+  }
+
+  .materi-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    font-size: 23px;
+  }
+
+  .materi-list-card h3 {
+    font-size: 16px;
+  }
+
+  .materi-card-desc {
+    font-size: 12.5px;
   }
 }

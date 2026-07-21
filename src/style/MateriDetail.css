@@ -1,54 +1,164 @@
+.materi-detail-page,
+.materi-detail-page * {
+  box-sizing: border-box;
+}
+
 .materi-detail-page {
   min-height: 100vh;
-  padding: 34px 36px 50px 300px;
-  background: #f3f5f9;
+  padding: 46px 34px 80px 335px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
   font-family: "Poppins", sans-serif;
+  color: #1f2937;
+  overflow-x: hidden;
 }
 
 .materi-detail-container {
   width: 100%;
-  max-width: 1060px;
+  max-width: 980px;
   margin: 0 auto;
 }
 
-.materi-detail-header {
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 30px 34px;
-  margin-bottom: 24px;
-  text-align: center;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+/* ===== BREADCRUMB ===== */
+
+.materi-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.materi-detail-header span {
+.materi-breadcrumb a {
+  color: #9a6700;
+  text-decoration: none;
+  font-weight: 900;
+}
+
+.materi-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.materi-breadcrumb b {
+  color: #1f2937;
+  font-weight: 900;
+}
+
+/* ===== HEADER ===== */
+
+.materi-detail-header {
+  position: relative;
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 28px 32px 30px;
+  margin-bottom: 24px;
+  border: 1px solid #edf0f5;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.materi-detail-header::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: rgba(244, 194, 122, 0.16);
+}
+
+.materi-detail-badge {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
-  padding: 6px 13px;
+  width: fit-content;
+  padding: 7px 12px;
   border-radius: 999px;
-  background: #fff8ef;
-  color: #b7791f;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #7c4a00;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 12px;
 }
 
 .materi-detail-header h1 {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
   margin: 0;
   color: #111827;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
   line-height: 1.35;
 }
 
-.materi-detail-content {
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 28px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+.materi-detail-header p {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 14.5px;
+  line-height: 1.7;
 }
 
+/* ===== KONTEN ===== */
+
+.materi-detail-content {
+  min-width: 0;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 30px;
+  border: 1px solid #edf0f5;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.materi-callout {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  padding: 17px 18px;
+  border-radius: 18px;
+  background: #fffaf2;
+  border: 1px solid #f3eadc;
+  margin-bottom: 28px;
+}
+
+.materi-callout-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 10px 22px rgba(244, 194, 122, 0.16);
+}
+
+.materi-callout strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #7c4a00;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.materi-callout p {
+  margin: 0;
+  color: #475569;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+/* ===== SECTION MATERI ===== */
+
 .materi-detail-section {
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .materi-detail-section:last-child {
@@ -58,27 +168,125 @@
 .materi-detail-section h3 {
   margin: 0 0 16px;
   color: #111827;
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 21px;
+  font-weight: 900;
   letter-spacing: -0.025em;
   line-height: 1.35;
 }
 
+.materi-detail-section h3::before {
+  content: "";
+  display: block;
+  width: 46px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  margin-bottom: 12px;
+}
+
 .materi-detail-section p {
-  margin: 0 0 14px;
-  color: #4b5563;
+  margin: 0 0 15px;
+  color: #334155;
   font-size: 15px;
-  line-height: 1.8;
+  line-height: 1.9;
   text-align: left;
+}
+
+.materi-detail-section p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== GAMBAR ===== */
+
+.image-section {
+  margin-bottom: 34px;
+}
+
+.detail-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}
+
+.detail-image-card {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  text-align: center;
+}
+
+.detail-image-card-large {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.detail-image-button {
+  position: relative;
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.detail-image-button img {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #f8fafc;
+  display: block;
+}
+
+.detail-zoom-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 900;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: 0.2s ease;
+}
+
+.detail-image-button:hover .detail-zoom-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.detail-image-caption {
+  display: block;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+/* ===== VIDEO / EMBED ===== */
+
+.detail-video {
+  display: block;
+  width: 100%;
+  max-height: 460px;
+  border-radius: 18px;
+  background: #000000;
 }
 
 .detail-genially-wrapper {
   position: relative;
   width: 100%;
-  max-width: 760px;
   aspect-ratio: 16 / 9;
   margin: 0 auto;
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
   background: #f8fafc;
   border: 1px solid #e5e7eb;
@@ -90,60 +298,27 @@
   border: none;
 }
 
-.detail-image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-}
-
-.detail-image-card {
-  background: #ffffff;
-  padding: 12px;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-  text-align: center;
-}
-
-.detail-image-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: contain;
-  border-radius: 12px;
-  background: #f8fafc;
-  cursor: pointer;
-}
-
-.detail-image-caption {
-  display: block;
-  margin-top: 10px;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.detail-video {
-  display: block;
-  width: 100%;
-  max-height: 480px;
-  border-radius: 16px;
-  background: #000000;
-}
+/* ===== FOOTER ===== */
 
 .materi-detail-footer {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 26px;
+  margin-top: 28px;
 }
 
 .detail-back-btn,
 .detail-next-btn {
-  padding: 12px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 22px;
   border-radius: 999px;
   text-decoration: none;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 900;
+  font-family: "Poppins", sans-serif;
+  transition: 0.22s ease;
 }
 
 .detail-back-btn {
@@ -152,51 +327,144 @@
   border: 1px solid #e5e7eb;
 }
 
-.detail-next-btn {
-  background: linear-gradient(135deg, #d89a34, #c18422);
-  color: #ffffff;
-  box-shadow: 0 12px 24px rgba(216, 154, 52, 0.2);
+.detail-back-btn:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
 }
+
+.detail-next-btn {
+  background: linear-gradient(135deg, #f6d28b, #ebb85f);
+  color: #1f2937;
+  box-shadow: 0 12px 24px rgba(216, 154, 52, 0.22);
+}
+
+.detail-next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(216, 154, 52, 0.28);
+}
+
+/* ===== MODAL GAMBAR ===== */
 
 .detail-image-modal {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(15, 23, 42, 0.82);
+  background: rgba(15, 23, 42, 0.86);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 24px;
 }
 
 .detail-modal-image {
-  max-width: 90vw;
+  max-width: 92vw;
   max-height: 88vh;
   border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
 }
 
-.materi-detail-loading {
-  padding-left: 300px;
-  padding-top: 60px;
-  font-family: "Poppins", sans-serif;
+.detail-modal-close {
+  position: fixed;
+  top: 22px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ===== LOADING / ERROR ===== */
+
+.materi-detail-loading,
+.materi-error-card {
+  padding: 28px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid #edf0f5;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  color: #64748b;
+  font-size: 14px;
+}
+
+.materi-error-card h2 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.materi-error-card p {
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 1100px) {
+  .materi-detail-page {
+    padding: 42px 28px 80px 295px;
+  }
+
+  .materi-detail-container {
+    max-width: 900px;
+  }
 }
 
 @media (max-width: 768px) {
   .materi-detail-page {
-    padding: 28px 18px 40px 112px;
+    padding: 34px 14px 70px 105px;
   }
 
-  .materi-detail-header,
-  .materi-detail-content {
+  .materi-breadcrumb {
+    font-size: 12px;
+  }
+
+  .materi-detail-header {
     padding: 22px;
     border-radius: 22px;
   }
 
   .materi-detail-header h1 {
-    font-size: 22px;
+    font-size: 24px;
+  }
+
+  .materi-detail-header p {
+    font-size: 13.5px;
+  }
+
+  .materi-detail-content {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .materi-callout {
+    grid-template-columns: 1fr;
+  }
+
+  .materi-callout-icon {
+    width: 42px;
+    height: 42px;
   }
 
   .materi-detail-section h3 {
     font-size: 18px;
+  }
+
+  .materi-detail-section p {
+    font-size: 14px;
+  }
+
+  .detail-image-button img {
+    max-height: 300px;
   }
 
   .materi-detail-footer {
@@ -205,6 +473,7 @@
 
   .detail-back-btn,
   .detail-next-btn {
+    width: 100%;
     text-align: center;
   }
 }

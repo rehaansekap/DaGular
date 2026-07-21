@@ -89,6 +89,10 @@ function QuizPage() {
   const [previewImage, setPreviewImage] = useState(null);
   const [answersReady, setAnswersReady] = useState(false);
 
+  const [started, setStarted] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [feedbackOpenMap, setFeedbackOpenMap] = useState({});
+
   const user_id = localStorage.getItem("user_id");
   const name = localStorage.getItem("name") || "Siswa";
 
@@ -177,7 +181,6 @@ function QuizPage() {
 
   useEffect(() => {
     if (!answersReady) return;
-
     localStorage.setItem(savedAnswersKey, JSON.stringify(answers));
   }, [answers, answersReady, savedAnswersKey]);
 
@@ -588,6 +591,11 @@ function QuizPage() {
 
       await refreshProgressAfterCheck();
 
+      setFeedbackOpenMap((prev) => ({
+        ...prev,
+        [Number(item.id)]: true,
+      }));
+
       if (passed) {
         alert(
           responseNonGraded
@@ -679,6 +687,13 @@ function QuizPage() {
     }
   };
 
+  const toggleFeedback = (questionId) => {
+    setFeedbackOpenMap((prev) => ({
+      ...prev,
+      [Number(questionId)]: !prev[Number(questionId)],
+    }));
+  };
+
   const renderFeedback = (item, index) => {
     const progress = getQuestionProgress(item, index);
     const nonGraded = isNonGradedQuestion(item);
@@ -698,6 +713,8 @@ function QuizPage() {
       return null;
     }
 
+    const feedbackIsOpen = Boolean(feedbackOpenMap[Number(item.id)]);
+
     const formatFieldName = (value) => {
       return String(value || "jawaban")
         .replace(/_/g, " ")
@@ -711,17 +728,30 @@ function QuizPage() {
 
       const cleanNote = String(note).trim();
 
-      if (cleanNote.length <= 140) {
+      if (cleanNote.length <= 420) {
         return cleanNote;
       }
 
-      return `${cleanNote.slice(0, 140)}...`;
+      return `${cleanNote.slice(0, 420)}...`;
+    };
+
+    const getSuggestion = (field) => {
+      return (
+        field.suggestion ||
+        field.revisionSuggestion ||
+        field.revision_suggestion ||
+        ""
+      );
     };
 
     if (nonGraded) {
       return (
-        <div className="question-feedback-box passed">
-          <div className="feedback-header-card">
+        <div className="question-feedback-box passed compact-feedback">
+          <button
+            type="button"
+            className="feedback-summary-toggle"
+            onClick={() => toggleFeedback(item.id)}
+          >
             <div>
               <span className="feedback-eyebrow">Refleksi Siswa</span>
 
@@ -736,15 +766,22 @@ function QuizPage() {
               </p>
             </div>
 
-            <div className="feedback-score-circle passed">✓</div>
-          </div>
+            <div className="feedback-summary-right">
+              <span className="feedback-score-circle passed">✓</span>
+              <small>{feedbackIsOpen ? "Tutup Detail" : "Buka Detail"}</small>
+            </div>
+          </button>
 
-          <div className="feedback-simple-card">
-            <p>
-              {getShortNote(progress.feedback) ||
-                "Refleksi berhasil disimpan."}
-            </p>
-          </div>
+          {feedbackIsOpen && (
+            <div className="feedback-detail-body">
+              <div className="feedback-simple-card">
+                <p>
+                  {getShortNote(progress.feedback) ||
+                    "Refleksi berhasil disimpan."}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -753,13 +790,17 @@ function QuizPage() {
       <div
         className={
           passed
-            ? "question-feedback-box passed"
-            : "question-feedback-box failed"
+            ? "question-feedback-box passed compact-feedback"
+            : "question-feedback-box failed compact-feedback"
         }
       >
-        <div className="feedback-header-card">
+        <button
+          type="button"
+          className="feedback-summary-toggle"
+          onClick={() => toggleFeedback(item.id)}
+        >
           <div>
-            <span className="feedback-eyebrow">Hasil Penilaian Otomatis</span>
+            <span className="feedback-eyebrow">Hasil Review Otomatis</span>
 
             <h4>
               Nilai {latestScore} — {passed ? "Tuntas" : "Perlu Revisi"}
@@ -767,89 +808,111 @@ function QuizPage() {
 
             <p>
               {passed
-                ? "Jawaban sudah memenuhi nilai minimal. Kamu bisa lanjut ke tahap berikutnya."
-                : `Jawaban belum memenuhi nilai minimal ${passingScore}. Perbaiki bagian yang nilainya masih rendah.`}
+                ? "Jawaban sudah memenuhi nilai minimal. Kamu bisa lanjut ke soal berikutnya."
+                : `Jawaban belum memenuhi nilai minimal ${passingScore}. Buka detail untuk melihat catatan revisi.`}
             </p>
           </div>
 
-          <div
-            className={
-              passed
-                ? "feedback-score-circle passed"
-                : "feedback-score-circle failed"
-            }
-          >
-            {latestScore}
+          <div className="feedback-summary-right">
+            <span
+              className={
+                passed
+                  ? "feedback-score-circle passed"
+                  : "feedback-score-circle failed"
+              }
+            >
+              {latestScore}
+            </span>
+
+            <small>{feedbackIsOpen ? "Tutup Detail" : "Buka Detail"}</small>
           </div>
-        </div>
+        </button>
 
-        {hasFieldResults ? (
-          <div className="field-result-list">
-            {fieldResults.map((field, fieldIndex) => {
-              const fieldScore = Number(field.score) || 0;
-              const fieldPassed = fieldScore >= passingScore;
-              const fieldName = formatFieldName(
-                field.fieldKey || field.field_key || `Bagian ${fieldIndex + 1}`
-              );
+        {feedbackIsOpen && (
+          <div className="feedback-detail-body">
+            {hasFieldResults ? (
+              <div className="field-result-list">
+                {fieldResults.map((field, fieldIndex) => {
+                  const fieldScore = Number(field.score) || 0;
 
-              return (
-                <div
-                  key={fieldIndex}
-                  className={
-                    fieldPassed
-                      ? "field-result-card passed"
-                      : "field-result-card failed"
-                  }
-                >
-                  <div className="field-result-top">
-                    <div className="field-result-content">
-                      <div className="field-title-row">
-                        <span className="field-result-title">{fieldName}</span>
+                  const fieldPassed =
+                    field.isPassed === true ||
+                    field.is_passed === true ||
+                    Number(field.isPassed) === 1 ||
+                    Number(field.is_passed) === 1 ||
+                    fieldScore >= passingScore;
+
+                  const fieldName = formatFieldName(
+                    field.fieldKey ||
+                      field.field_key ||
+                      `Bagian ${fieldIndex + 1}`
+                  );
+
+                  const suggestion = getSuggestion(field);
+
+                  return (
+                    <div
+                      key={fieldIndex}
+                      className={
+                        fieldPassed
+                          ? "field-result-card passed"
+                          : "field-result-card failed"
+                      }
+                    >
+                      <div className="field-result-top">
+                        <div className="field-result-content">
+                          <div className="field-title-row">
+                            <span className="field-result-title">
+                              {fieldName}
+                            </span>
+
+                            <span
+                              className={
+                                fieldPassed
+                                  ? "field-status-chip passed"
+                                  : "field-status-chip failed"
+                              }
+                            >
+                              {fieldPassed ? "Tuntas" : "Revisi"}
+                            </span>
+                          </div>
+
+                          {field.note && (
+                            <p className="field-result-note">
+                              {getShortNote(field.note)}
+                            </p>
+                          )}
+                        </div>
 
                         <span
                           className={
                             fieldPassed
-                              ? "field-status-chip passed"
-                              : "field-status-chip failed"
+                              ? "field-score-pill passed"
+                              : "field-score-pill failed"
                           }
                         >
-                          {fieldPassed ? "Tuntas" : "Revisi"}
+                          {fieldScore}
                         </span>
                       </div>
 
-                      {field.note && (
-                        <p className="field-result-note">
-                          {getShortNote(field.note)}
-                        </p>
+                      {suggestion && (
+                        <div className="feedback-suggestion-box clean">
+                          <strong>Saran revisi</strong>
+                          <p>{getShortNote(suggestion)}</p>
+                        </div>
                       )}
                     </div>
-
-                    <span
-                      className={
-                        fieldPassed
-                          ? "field-score-pill passed"
-                          : "field-score-pill failed"
-                      }
-                    >
-                      {fieldScore}
-                    </span>
-                  </div>
-
-                  {Array.isArray(field.matchedKeywords) &&
-                    field.matchedKeywords.length > 0 && (
-                      <div className="matched-keywords">
-                        {field.matchedKeywords.slice(0, 6).map((keyword, idx) => (
-                          <span key={idx}>{keyword}</span>
-                        ))}
-                      </div>
-                    )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="feedback-simple-card">
-            <p>{getShortNote(progress.feedback) || "Jawaban sudah diperiksa."}</p>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="feedback-simple-card">
+                <p>
+                  {getShortNote(progress.feedback) ||
+                    "Jawaban sudah diperiksa."}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -860,7 +923,7 @@ function QuizPage() {
     return (
       <div className="quiz-page">
         <div className="quiz-wrapper">
-          <div className="quiz-card">
+          <div className="quiz-card quiz-loading-card">
             <p>Memuat LKPD...</p>
           </div>
         </div>
@@ -868,23 +931,466 @@ function QuizPage() {
     );
   }
 
+  if (questions.length === 0) {
+    return (
+      <div className="quiz-page">
+        <div className="quiz-wrapper">
+          <div className="quiz-card quiz-empty">
+            <p>Belum ada soal LKPD pada pertemuan ini.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentItem = questions[currentQuestionIndex] || questions[0];
+
+  const currentIndex = questions.findIndex(
+    (question) => Number(question.id) === Number(currentItem.id)
+  );
+
+  const safeCurrentIndex = currentIndex >= 0 ? currentIndex : 0;
+
+  const currentFields = getAnswerFields(currentItem.answer_fields);
+  const currentAnswerType = getAnswerType(currentItem.answer_type);
+  const currentNonGraded = isNonGradedQuestion(currentItem);
+  const currentLocked = isQuestionLocked(currentItem, safeCurrentIndex);
+  const currentPassed = isQuestionPassed(currentItem, safeCurrentIndex);
+  const currentPassingScore = getPassingScore(currentItem);
+  const currentMaxScore = getMaxScore(currentItem);
+  const currentProgress = getQuestionProgress(currentItem, safeCurrentIndex);
+
+  const goToQuestion = (targetIndex) => {
+    const targetQuestion = questions[targetIndex];
+
+    if (!targetQuestion) return;
+
+    if (isQuestionLocked(targetQuestion, targetIndex)) {
+      alert("Selesaikan soal sebelumnya terlebih dahulu.");
+      return;
+    }
+
+    setCurrentQuestionIndex(targetIndex);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const goToPreviousQuestion = () => {
+    const prevIndex = Math.max(safeCurrentIndex - 1, 0);
+    goToQuestion(prevIndex);
+  };
+
+  const goToNextQuestion = () => {
+    if (!currentPassed) {
+      alert("Cek jawaban dan tuntaskan soal ini terlebih dahulu.");
+      return;
+    }
+
+    const nextIndex = Math.min(safeCurrentIndex + 1, questions.length - 1);
+    goToQuestion(nextIndex);
+  };
+
+  const renderQuestionNavigation = () => {
+    return (
+      <div className="quiz-question-nav">
+        {questions.map((item, index) => {
+          const locked = isQuestionLocked(item, index);
+          const passed = isQuestionPassed(item, index);
+          const active = index === safeCurrentIndex;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`${active ? "active" : ""} ${
+                passed ? "passed" : ""
+              } ${locked ? "locked" : ""}`}
+              onClick={() => goToQuestion(index)}
+              disabled={locked}
+            >
+              {passed ? "✓" : index + 1}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderCurrentQuestion = () => {
+    return (
+      <>
+        <div className="quiz-header compact wizard-heading">
+          <div className="quiz-badge">
+            Soal {safeCurrentIndex + 1} dari {questions.length}
+          </div>
+
+          <p>
+            Fokus selesaikan satu soal terlebih dahulu. Soal berikutnya akan
+            dibuka setelah jawaban dinyatakan tuntas.
+          </p>
+        </div>
+
+        {renderQuestionNavigation()}
+
+        <div
+          className={`quiz-card question-step-card quiz-question-panel ${
+            currentLocked ? "question-locked" : ""
+          } ${currentPassed ? "question-passed" : ""}`}
+        >
+          {currentLocked && (
+            <div className="question-lock-layer">
+              <div className="question-lock-content">
+                <div className="lock-icon">🔒</div>
+                <strong>Soal terkunci</strong>
+                <p>
+                  {currentNonGraded
+                    ? "Isi bagian sebelumnya terlebih dahulu."
+                    : `Selesaikan soal sebelumnya dengan nilai minimal ${currentPassingScore}.`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="quiz-card-top">
+            <div className="quiz-number">{safeCurrentIndex + 1}</div>
+
+            <div className="quiz-soal-area">
+              <div className="quiz-question-text">{currentItem.question}</div>
+            </div>
+          </div>
+
+          <div className="question-meta-top">
+            <div className="question-meta-group">
+              <span className="question-meta-label">Status</span>
+
+              <span
+                className={
+                  currentPassed
+                    ? "question-status-pill passed"
+                    : currentLocked
+                    ? "question-status-pill locked"
+                    : "question-status-pill active"
+                }
+              >
+                {currentPassed
+                  ? currentNonGraded
+                    ? "Refleksi Tersimpan"
+                    : "Tuntas"
+                  : currentLocked
+                  ? "Terkunci"
+                  : currentNonGraded
+                  ? "Perlu Diisi"
+                  : "Sedang Dikerjakan"}
+              </span>
+            </div>
+
+            <div className="question-meta-group">
+              <span className="question-meta-label">
+                {currentNonGraded ? "Penilaian" : "Nilai Saat Ini"}
+              </span>
+
+              <span className="question-score-pill">
+                {currentNonGraded
+                  ? "Tidak Dinilai"
+                  : `${Number(currentProgress.latest_score) || 0}/${currentMaxScore}`}
+              </span>
+            </div>
+          </div>
+
+          {currentItem.image_url && (
+            <div className="quiz-image-wrapper">
+              <img
+                src={currentItem.image_url}
+                alt={`Gambar soal ${safeCurrentIndex + 1}`}
+                className="quiz-image clickable"
+                onClick={() =>
+                  !currentLocked && setPreviewImage(currentItem.image_url)
+                }
+              />
+            </div>
+          )}
+
+          <div className="quiz-answer-area">
+            <label className="quiz-answer-label">Jawaban</label>
+
+            {currentAnswerType === "text" &&
+              currentFields.map((field) => (
+                <div key={field} className="quiz-answer-field">
+                  <label className="quiz-answer-sub-label">{field}</label>
+
+                  <textarea
+                    className="quiz-textarea quiz-textarea-small"
+                    value={answers[currentItem.id]?.[field] || ""}
+                    disabled={currentLocked || currentPassed}
+                    onChange={(e) =>
+                      handleChange(
+                        currentItem.id,
+                        field,
+                        e.target.value,
+                        currentAnswerType
+                      )
+                    }
+                    placeholder={
+                      currentNonGraded
+                        ? "Tulis refleksi di sini..."
+                        : "Tulis jawaban di sini..."
+                    }
+                  />
+                </div>
+              ))}
+
+            {currentAnswerType === "image" &&
+              currentFields.map((field) => {
+                const uploadKey = `${currentItem.id}-${field}`;
+                const uploadedImage = answers[currentItem.id]?.[field];
+
+                return (
+                  <div key={field} className="quiz-answer-field">
+                    <label className="quiz-answer-sub-label">{field}</label>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="quiz-file-input"
+                      disabled={currentLocked || currentPassed}
+                      onChange={(e) =>
+                        handleImageUpload(
+                          currentItem.id,
+                          field,
+                          e.target.files[0]
+                        )
+                      }
+                    />
+
+                    {uploading[uploadKey] && (
+                      <p className="quiz-upload-status">
+                        Sedang mengupload gambar...
+                      </p>
+                    )}
+
+                    {uploadedImage?.image_url && (
+                      <div className="quiz-upload-preview">
+                        <p>
+                          Gambar berhasil diupload
+                          {uploadedImage?.image_name
+                            ? `: ${uploadedImage.image_name}`
+                            : ""}
+                        </p>
+
+                        <img
+                          src={uploadedImage.image_url}
+                          alt={`Preview ${field}`}
+                          className="quiz-image clickable"
+                          onClick={() =>
+                            setPreviewImage(uploadedImage.image_url)
+                          }
+                        />
+
+                        {!currentPassed && !currentLocked && (
+                          <button
+                            type="button"
+                            className="quiz-remove-image-btn"
+                            onClick={() =>
+                              handleRemoveImage(currentItem.id, field)
+                            }
+                          >
+                            Hapus Gambar
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+            {currentAnswerType === "text_image" &&
+              currentFields.map((field) => {
+                const uploadKey = `${currentItem.id}-${field}`;
+                const fieldAnswer = answers[currentItem.id]?.[field] || {};
+                const textValue =
+                  typeof fieldAnswer === "object" ? fieldAnswer.text || "" : "";
+                const uploadedImage =
+                  typeof fieldAnswer === "object" ? fieldAnswer : null;
+
+                return (
+                  <div key={field} className="quiz-answer-field">
+                    <label className="quiz-answer-sub-label">{field}</label>
+
+                    <textarea
+                      className="quiz-textarea quiz-textarea-small"
+                      value={textValue}
+                      disabled={currentLocked || currentPassed}
+                      onChange={(e) =>
+                        handleChange(
+                          currentItem.id,
+                          field,
+                          e.target.value,
+                          currentAnswerType
+                        )
+                      }
+                      placeholder="Tulis jawaban di sini..."
+                    />
+
+                    <label className="quiz-answer-sub-label">
+                      Upload Gambar Jawaban
+                    </label>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="quiz-file-input"
+                      disabled={currentLocked || currentPassed}
+                      onChange={(e) =>
+                        handleImageUpload(
+                          currentItem.id,
+                          field,
+                          e.target.files[0]
+                        )
+                      }
+                    />
+
+                    {uploading[uploadKey] && (
+                      <p className="quiz-upload-status">
+                        Sedang mengupload gambar...
+                      </p>
+                    )}
+
+                    {uploadedImage?.image_url && (
+                      <div className="quiz-upload-preview">
+                        <p>
+                          Gambar berhasil diupload
+                          {uploadedImage?.image_name
+                            ? `: ${uploadedImage.image_name}`
+                            : ""}
+                        </p>
+
+                        <img
+                          src={uploadedImage.image_url}
+                          alt={`Preview ${field}`}
+                          className="quiz-image clickable"
+                          onClick={() =>
+                            setPreviewImage(uploadedImage.image_url)
+                          }
+                        />
+
+                        {!currentPassed && !currentLocked && (
+                          <button
+                            type="button"
+                            className="quiz-remove-image-btn"
+                            onClick={() =>
+                              handleRemoveImage(currentItem.id, field)
+                            }
+                          >
+                            Hapus Gambar
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+
+          {renderFeedback(currentItem, safeCurrentIndex)}
+
+          {!currentLocked && (
+            <div className="question-check-area">
+              <button
+                type="button"
+                className={currentPassed ? "btn-secondary" : "btn-primary"}
+                disabled={
+                  currentPassed ||
+                  checkingQuestionId === currentItem.id ||
+                  loading ||
+                  isAnyUploading
+                }
+                onClick={() =>
+                  handleCheckQuestion(currentItem, safeCurrentIndex)
+                }
+              >
+                {currentPassed
+                  ? currentNonGraded
+                    ? "Refleksi Tersimpan"
+                    : "Sudah Tuntas"
+                  : checkingQuestionId === currentItem.id
+                  ? currentNonGraded
+                    ? "Menyimpan..."
+                    : "Mengecek..."
+                  : currentNonGraded
+                  ? "Simpan Refleksi"
+                  : "Cek Jawaban"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="quiz-wizard-bottom-nav">
+          <button
+            type="button"
+            className="btn-light-quiz"
+            onClick={goToPreviousQuestion}
+            disabled={safeCurrentIndex === 0}
+          >
+            ← Soal Sebelumnya
+          </button>
+
+          {safeCurrentIndex < questions.length - 1 ? (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={goToNextQuestion}
+              disabled={!currentPassed}
+            >
+              Lanjut ke Soal {safeCurrentIndex + 2} →
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleSubmit}
+              disabled={loading || isAnyUploading || !allRequiredQuestionsPassed}
+            >
+              {loading
+                ? "Mengirim..."
+                : isAnyUploading
+                ? "Menunggu Upload..."
+                : allRequiredQuestionsPassed
+                ? "Kirim Semua Jawaban"
+                : "Selesaikan Semua Bagian Dulu"}
+            </button>
+          )}
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="quiz-page">
-      <div className="quiz-wrapper">
-        <div className="quiz-greeting-card">
+      <div className="quiz-wrapper quiz-wizard-wrapper">
+        <div className="quiz-greeting-card quiz-sticky-progress">
           <div>
             <span className="quiz-greeting-label">Halo, {name}</span>
-            <h2>Siap mengerjakan LKPD hari ini?</h2>
+
+            <h2>
+              {started
+                ? `Soal ${safeCurrentIndex + 1} dari ${questions.length}`
+                : "Siap mengerjakan LKPD hari ini?"}
+            </h2>
+
             <p>
-              Kerjakan LKPD pertemuan {id} secara berurutan. Soal berikutnya
-              akan terbuka setelah jawabanmu tuntas. Bagian refleksi tetap
-              wajib diisi, tetapi tidak masuk penilaian.
+              {started
+                ? "Kerjakan LKPD secara bertahap. Setelah jawaban dicek dan tuntas, kamu bisa melanjutkan ke soal berikutnya."
+                : `LKPD pertemuan ${id} dikerjakan secara berurutan. Bacalah pendahuluan terlebih dahulu sebelum mulai menjawab soal.`}
             </p>
           </div>
 
           <div className="quiz-progress-box">
             <div className="quiz-progress-text">
-              <span>Progress Tuntas</span>
+              <span>Progres Kamu</span>
+
               <strong>
                 {completedCount}/{questions.length}
               </strong>
@@ -901,345 +1407,34 @@ function QuizPage() {
           </div>
         </div>
 
-        {questions.length > 0 && (
-          <div className="quiz-card quiz-intro-card">
+        {!started ? (
+          <div className="quiz-card quiz-intro-card quiz-intro-start-card">
             <h4 className="quiz-intro-heading">Pendahuluan</h4>
 
             <p className="quiz-question-text quiz-intro-text">
               {lkpdInfo.pendahuluan_lkpd || "-"}
             </p>
-          </div>
-        )}
 
-        <div className="quiz-header compact">
-          <div className="quiz-badge">Soal LKPD</div>
-        </div>
+            <div className="quiz-start-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  setStarted(true);
+                  setCurrentQuestionIndex(0);
 
-        <div className="quiz-list">
-          {questions.map((item, index) => {
-            const fields = getAnswerFields(item.answer_fields);
-            const answerType = getAnswerType(item.answer_type);
-            const nonGraded = isNonGradedQuestion(item);
-            const locked = isQuestionLocked(item, index);
-            const passed = isQuestionPassed(item, index);
-            const passingScore = getPassingScore(item);
-            const maxScore = getMaxScore(item);
-            const progress = getQuestionProgress(item, index);
-
-            return (
-              <div
-                key={item.id}
-                className={`quiz-card question-step-card ${
-                  locked ? "question-locked" : ""
-                } ${passed ? "question-passed" : ""}`}
+                  window.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                  });
+                }}
               >
-                {locked && (
-                  <div className="question-lock-layer">
-                    <div className="question-lock-content">
-                      <div className="lock-icon">🔒</div>
-                      <strong>Soal terkunci</strong>
-                      <p>
-                        {nonGraded
-                          ? "Isi bagian sebelumnya terlebih dahulu."
-                          : `Selesaikan soal sebelumnya dengan nilai minimal ${passingScore}.`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <p className="quiz-question-count">
-                  Soal {index + 1} dari {questions.length}
-                </p>
-
-                <div className="quiz-card-top">
-                  <div className="quiz-number">{index + 1}</div>
-
-                  <div className="quiz-soal-area">
-                    <div className="quiz-question-text">{item.question}</div>
-                  </div>
-                </div>
-
-                <div className="question-meta-top">
-                  <div className="question-meta-group">
-                    <span className="question-meta-label">Status</span>
-                    <span
-                      className={
-                        passed
-                          ? "question-status-pill passed"
-                          : locked
-                          ? "question-status-pill locked"
-                          : "question-status-pill active"
-                      }
-                    >
-                      {passed
-                        ? nonGraded
-                          ? "Refleksi Tersimpan"
-                          : "Tuntas"
-                        : locked
-                        ? "Terkunci"
-                        : nonGraded
-                        ? "Perlu Diisi"
-                        : "Sedang Dikerjakan"}
-                    </span>
-                  </div>
-
-                  <div className="question-meta-group">
-                    <span className="question-meta-label">
-                      {nonGraded ? "Penilaian" : "Nilai Saat Ini"}
-                    </span>
-
-                    <span className="question-score-pill">
-                      {nonGraded
-                        ? "Tidak Dinilai"
-                        : `${Number(progress.latest_score) || 0}/${maxScore}`}
-                    </span>
-                  </div>
-                </div>
-
-                {item.image_url && (
-                  <div className="quiz-image-wrapper">
-                    <img
-                      src={item.image_url}
-                      alt={`Gambar soal ${index + 1}`}
-                      className="quiz-image clickable"
-                      onClick={() => !locked && setPreviewImage(item.image_url)}
-                    />
-                  </div>
-                )}
-
-                <div className="quiz-answer-area">
-                  <label className="quiz-answer-label">Jawaban</label>
-
-                  {answerType === "text" &&
-                    fields.map((field) => (
-                      <div key={field} className="quiz-answer-field">
-                        <label className="quiz-answer-sub-label">{field}</label>
-
-                        <textarea
-                          className="quiz-textarea quiz-textarea-small"
-                          value={answers[item.id]?.[field] || ""}
-                          disabled={locked || passed}
-                          onChange={(e) =>
-                            handleChange(
-                              item.id,
-                              field,
-                              e.target.value,
-                              answerType
-                            )
-                          }
-                          placeholder={
-                            nonGraded
-                              ? "Tulis refleksi di sini..."
-                              : "Tulis jawaban di sini..."
-                          }
-                        />
-                      </div>
-                    ))}
-
-                  {answerType === "image" &&
-                    fields.map((field) => {
-                      const uploadKey = `${item.id}-${field}`;
-                      const uploadedImage = answers[item.id]?.[field];
-
-                      return (
-                        <div key={field} className="quiz-answer-field">
-                          <label className="quiz-answer-sub-label">{field}</label>
-
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="quiz-file-input"
-                            disabled={locked || passed}
-                            onChange={(e) =>
-                              handleImageUpload(
-                                item.id,
-                                field,
-                                e.target.files[0]
-                              )
-                            }
-                          />
-
-                          {uploading[uploadKey] && (
-                            <p className="quiz-upload-status">
-                              Sedang mengupload gambar...
-                            </p>
-                          )}
-
-                          {uploadedImage?.image_url && (
-                            <div className="quiz-upload-preview">
-                              <p>
-                                Gambar berhasil diupload
-                                {uploadedImage?.image_name
-                                  ? `: ${uploadedImage.image_name}`
-                                  : ""}
-                              </p>
-
-                              <img
-                                src={uploadedImage.image_url}
-                                alt={`Preview ${field}`}
-                                className="quiz-image clickable"
-                                onClick={() =>
-                                  setPreviewImage(uploadedImage.image_url)
-                                }
-                              />
-
-                              {!passed && !locked && (
-                                <button
-                                  type="button"
-                                  className="quiz-remove-image-btn"
-                                  onClick={() =>
-                                    handleRemoveImage(item.id, field)
-                                  }
-                                >
-                                  Hapus Gambar
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                  {answerType === "text_image" &&
-                    fields.map((field) => {
-                      const uploadKey = `${item.id}-${field}`;
-                      const fieldAnswer = answers[item.id]?.[field] || {};
-                      const textValue =
-                        typeof fieldAnswer === "object"
-                          ? fieldAnswer.text || ""
-                          : "";
-                      const uploadedImage =
-                        typeof fieldAnswer === "object" ? fieldAnswer : null;
-
-                      return (
-                        <div key={field} className="quiz-answer-field">
-                          <label className="quiz-answer-sub-label">{field}</label>
-
-                          <textarea
-                            className="quiz-textarea quiz-textarea-small"
-                            value={textValue}
-                            disabled={locked || passed}
-                            onChange={(e) =>
-                              handleChange(
-                                item.id,
-                                field,
-                                e.target.value,
-                                answerType
-                              )
-                            }
-                            placeholder="Tulis jawaban di sini..."
-                          />
-
-                          <label className="quiz-answer-sub-label">
-                            Upload Gambar Jawaban
-                          </label>
-
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="quiz-file-input"
-                            disabled={locked || passed}
-                            onChange={(e) =>
-                              handleImageUpload(
-                                item.id,
-                                field,
-                                e.target.files[0]
-                              )
-                            }
-                          />
-
-                          {uploading[uploadKey] && (
-                            <p className="quiz-upload-status">
-                              Sedang mengupload gambar...
-                            </p>
-                          )}
-
-                          {uploadedImage?.image_url && (
-                            <div className="quiz-upload-preview">
-                              <p>
-                                Gambar berhasil diupload
-                                {uploadedImage?.image_name
-                                  ? `: ${uploadedImage.image_name}`
-                                  : ""}
-                              </p>
-
-                              <img
-                                src={uploadedImage.image_url}
-                                alt={`Preview ${field}`}
-                                className="quiz-image clickable"
-                                onClick={() =>
-                                  setPreviewImage(uploadedImage.image_url)
-                                }
-                              />
-
-                              {!passed && !locked && (
-                                <button
-                                  type="button"
-                                  className="quiz-remove-image-btn"
-                                  onClick={() =>
-                                    handleRemoveImage(item.id, field)
-                                  }
-                                >
-                                  Hapus Gambar
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
-
-                {renderFeedback(item, index)}
-
-                {!locked && (
-                  <div className="question-check-area">
-                    <button
-                      type="button"
-                      className={passed ? "btn-secondary" : "btn-primary"}
-                      disabled={
-                        passed ||
-                        checkingQuestionId === item.id ||
-                        loading ||
-                        isAnyUploading
-                      }
-                      onClick={() => handleCheckQuestion(item, index)}
-                    >
-                      {passed
-                        ? nonGraded
-                          ? "Refleksi Tersimpan"
-                          : "Sudah Tuntas"
-                        : checkingQuestionId === item.id
-                        ? nonGraded
-                          ? "Menyimpan..."
-                          : "Mengecek..."
-                        : nonGraded
-                        ? "Simpan Refleksi"
-                        : "Cek Jawaban"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {questions.length > 0 && (
-          <div className="quiz-submit-area">
-            <button
-              className="btn-primary"
-              onClick={handleSubmit}
-              disabled={loading || isAnyUploading || !allRequiredQuestionsPassed}
-            >
-              {loading
-                ? "Mengirim..."
-                : isAnyUploading
-                ? "Menunggu Upload..."
-                : allRequiredQuestionsPassed
-                ? "Kirim Semua Jawaban"
-                : "Selesaikan Semua Bagian Dulu"}
-            </button>
+                Mulai Mengerjakan
+              </button>
+            </div>
           </div>
+        ) : (
+          renderCurrentQuestion()
         )}
       </div>
 

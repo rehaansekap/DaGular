@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "../style/Proyek.css";
 
 function Proyek() {
+  const navigate = useNavigate();
+
   const [projects, setProjects] = useState([]);
   const [activePertemuan, setActivePertemuan] = useState(null);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -17,6 +20,9 @@ function Proyek() {
   const [commentInputs, setCommentInputs] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
   const [sendingComment, setSendingComment] = useState({});
+
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [openReviewId, setOpenReviewId] = useState(null);
 
   const token = localStorage.getItem("token");
   const currentUserName = localStorage.getItem("name");
@@ -49,6 +55,32 @@ function Proyek() {
     );
   }, [activeProjects, selectedProjectId]);
 
+  const handleInvalidToken = useCallback(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("name");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("email");
+
+    alert(
+      "Sesi login kamu sudah habis atau token tidak valid. Silakan login ulang."
+    );
+
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  const isTokenError = (message = "") => {
+    const cleanMessage = String(message || "").toLowerCase();
+
+    return (
+      cleanMessage.includes("token") ||
+      cleanMessage.includes("jwt") ||
+      cleanMessage.includes("unauthorized") ||
+      cleanMessage.includes("forbidden") ||
+      cleanMessage.includes("tidak valid")
+    );
+  };
+
   const loadProjects = async () => {
     setLoadingProjects(true);
 
@@ -57,28 +89,50 @@ function Proyek() {
       const result = await res.json();
       const data = result.data || [];
 
-      setProjects(data);
+      const sortedData = [...data].sort((a, b) => {
+        const pertemuanA = Number(a.pertemuan) || 0;
+        const pertemuanB = Number(b.pertemuan) || 0;
 
-      if (data.length > 0) {
-        const firstPertemuan = Number(data[0].pertemuan);
-        setActivePertemuan(firstPertemuan);
-        setSelectedProjectId(Number(data[0].id));
+        if (pertemuanA !== pertemuanB) {
+          return pertemuanA - pertemuanB;
+        }
+
+        return Number(a.id) - Number(b.id);
+      });
+
+      setProjects(sortedData);
+
+      if (sortedData.length > 0) {
+        const firstProject = sortedData[0];
+        setActivePertemuan(Number(firstProject.pertemuan));
+        setSelectedProjectId(Number(firstProject.id));
+      } else {
+        setActivePertemuan(null);
+        setSelectedProjectId(null);
       }
     } catch (err) {
       console.error("Gagal mengambil proyek:", err);
       setProjects([]);
+      setActivePertemuan(null);
+      setSelectedProjectId(null);
     } finally {
       setLoadingProjects(false);
     }
   };
 
   const loadComments = useCallback(async (karyaId) => {
-    setLoadingComments((prev) => ({ ...prev, [karyaId]: true }));
+    if (!karyaId) return;
+
+    setLoadingComments((prev) => ({
+      ...prev,
+      [karyaId]: true,
+    }));
 
     try {
       const res = await fetch(
         `http://localhost:5000/api/karya/${karyaId}/comments`
       );
+
       const text = await res.text();
 
       let result;
@@ -101,7 +155,10 @@ function Proyek() {
         [karyaId]: [],
       }));
     } finally {
-      setLoadingComments((prev) => ({ ...prev, [karyaId]: false }));
+      setLoadingComments((prev) => ({
+        ...prev,
+        [karyaId]: false,
+      }));
     }
   }, []);
 
@@ -123,9 +180,9 @@ function Proyek() {
 
       setGallery(data);
 
-      for (const item of data) {
+      data.forEach((item) => {
         loadComments(item.id);
-      }
+      });
     } catch (err) {
       console.error("Gagal mengambil galeri:", err);
       setGallery([]);
@@ -150,17 +207,38 @@ function Proyek() {
     }
 
     setSelectedFile(null);
+    setOpenReviewId(null);
   }, [activePertemuan, activeProjects]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("File harus berupa gambar");
+      e.target.value = "";
+      return;
     }
+
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      alert("Ukuran gambar maksimal 5 MB");
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedFile(file);
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
+
+    if (!token) {
+      handleInvalidToken();
+      return;
+    }
 
     if (!selectedFile) {
       alert("Pilih gambar terlebih dahulu");
@@ -187,16 +265,37 @@ function Proyek() {
         body: formData,
       });
 
-      const result = await res.json();
+      const text = await res.text();
 
-      if (!result.success) {
+      let result = {};
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        console.error("Response upload bukan JSON:", text);
+        alert("Upload gagal. Response server tidak valid.");
+        return;
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        handleInvalidToken();
+        return;
+      }
+
+      if (!res.ok || result.success === false) {
+        if (isTokenError(result.message)) {
+          handleInvalidToken();
+          return;
+        }
+
         alert(result.message || "Upload gagal");
         return;
       }
 
       alert("Karya berhasil diunggah");
+
       setSelectedFile(null);
-      loadGallery();
+      setShowUploadForm(false);
+      await loadGallery();
     } catch (err) {
       console.error("Upload error:", err);
       alert("Terjadi kesalahan saat upload");
@@ -213,6 +312,11 @@ function Proyek() {
   };
 
   const handleSubmitComment = async (karyaId) => {
+    if (!token) {
+      handleInvalidToken();
+      return;
+    }
+
     const komentar = commentInputs[karyaId]?.trim();
 
     if (!komentar) {
@@ -220,7 +324,10 @@ function Proyek() {
       return;
     }
 
-    setSendingComment((prev) => ({ ...prev, [karyaId]: true }));
+    setSendingComment((prev) => ({
+      ...prev,
+      [karyaId]: true,
+    }));
 
     try {
       const res = await fetch(
@@ -236,18 +343,27 @@ function Proyek() {
       );
 
       const text = await res.text();
-      let result;
 
+      let result = {};
       try {
-        result = JSON.parse(text);
-      } catch (parseError) {
-        console.error("Response bukan JSON:", text);
-        throw new Error(
-          "Response server bukan JSON. Cek backend komentar dan restart server."
-        );
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        console.error("Response komentar bukan JSON:", text);
+        alert("Komentar gagal dikirim. Response server tidak valid.");
+        return;
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        handleInvalidToken();
+        return;
       }
 
       if (!res.ok || result.success === false) {
+        if (isTokenError(result.message)) {
+          handleInvalidToken();
+          return;
+        }
+
         throw new Error(result.message || "Gagal mengirim komentar");
       }
 
@@ -256,31 +372,69 @@ function Proyek() {
         [karyaId]: "",
       }));
 
+      setOpenReviewId(karyaId);
+
       if (result.data) {
         setCommentsMap((prev) => ({
           ...prev,
           [karyaId]: [...(prev[karyaId] || []), result.data],
         }));
       } else {
-        loadComments(karyaId);
+        await loadComments(karyaId);
       }
     } catch (err) {
       console.error("Komentar gagal dikirim:", err);
       alert(err.message || "Gagal mengirim komentar");
     } finally {
-      setSendingComment((prev) => ({ ...prev, [karyaId]: false }));
+      setSendingComment((prev) => ({
+        ...prev,
+        [karyaId]: false,
+      }));
     }
+  };
+
+  const handleToggleReview = (karyaId) => {
+    setOpenReviewId((prev) =>
+      Number(prev) === Number(karyaId) ? null : karyaId
+    );
+
+    if (!commentsMap[karyaId]) {
+      loadComments(karyaId);
+    }
+  };
+
+  const isOwner = (item) => {
+    const uploaderName = String(item.uploader || "").trim().toLowerCase();
+    const userName = String(currentUserName || "").trim().toLowerCase();
+
+    return uploaderName && userName && uploaderName === userName;
+  };
+
+  const getCommentCount = (item) => {
+    return (commentsMap[item.id] || []).length;
   };
 
   return (
     <div className="proyek-container">
-      <div className="proyek-hero">
-        <h1 className="proyek-title">Proyek Desain Grafis</h1>
-        <p className="proyek-subtitle">
-          Unggah hasil karya sesuai proyek, lalu berikan peer review untuk karya
-          siswa lainnya.
-        </p>
-      </div>
+      <section className="proyek-hero">
+        <div className="proyek-hero-text">
+          <h1 className="proyek-title">Galeri Proyek Siswa</h1>
+
+          <p className="proyek-subtitle">
+            Unggah hasil karya sesuai proyek, lalu berikan peer review untuk
+            karya siswa lainnya.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="btn-open-upload"
+          onClick={() => setShowUploadForm((prev) => !prev)}
+          disabled={loadingProjects || pertemuanList.length === 0}
+        >
+          {showUploadForm ? "Tutup Form" : "+ Unggah Karyamu"}
+        </button>
+      </section>
 
       <div className="project-tabs">
         {loadingProjects ? (
@@ -301,7 +455,10 @@ function Proyek() {
                   ? "active-tab"
                   : ""
               }
-              onClick={() => setActivePertemuan(Number(pertemuan))}
+              onClick={() => {
+                setActivePertemuan(Number(pertemuan));
+                setShowUploadForm(false);
+              }}
             >
               Pertemuan {pertemuan}
             </button>
@@ -311,17 +468,19 @@ function Proyek() {
 
       {activeProjects.length > 0 && (
         <section className="project-info-card">
-          <div className="project-info-head">
+          <div className="project-info-head clean-project-head">
             <div>
-              <span className="project-badge">
-                Pertemuan {activePertemuan}
-              </span>
-
               <h2>
                 {activeProjects.length > 1
                   ? `${activeProjects.length} Proyek Tersedia`
                   : activeProjects[0].judul}
               </h2>
+            </div>
+
+            <div className="project-mini-stat">
+              {loadingGallery
+                ? "Memuat karya..."
+                : `${gallery.length} karya terkumpul`}
             </div>
           </div>
 
@@ -338,6 +497,8 @@ function Proyek() {
                 onClick={() => {
                   setSelectedProjectId(Number(project.id));
                   setSelectedFile(null);
+                  setOpenReviewId(null);
+                  setShowUploadForm(false);
                 }}
               >
                 <label>Proyek</label>
@@ -348,76 +509,85 @@ function Proyek() {
         </section>
       )}
 
-      <div className="upload-section">
-        <h3>Unggah Karya</h3>
+      {showUploadForm && (
+        <section className="upload-section upload-section-open">
+          <div className="upload-head">
+            <div>
+              <h3>Unggah Karya</h3>
 
-        <p className="upload-note">
-          {selectedProject
-            ? `Proyek dipilih: ${selectedProject.judul}`
-            : "Pilih proyek terlebih dahulu."}
-        </p>
-
-        {activeProjects.length > 1 && (
-          <div className="upload-project-select">
-            <label>Pilih Proyek</label>
-
-            <select
-              value={selectedProjectId || ""}
-              onChange={(e) => {
-                setSelectedProjectId(Number(e.target.value));
-                setSelectedFile(null);
-              }}
-            >
-              {activeProjects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.judul}
-                </option>
-              ))}
-            </select>
+              <p className="upload-note">
+                {selectedProject
+                  ? `Proyek dipilih: ${selectedProject.judul}`
+                  : "Pilih proyek terlebih dahulu."}
+              </p>
+            </div>
           </div>
-        )}
 
-        <form onSubmit={handleUpload}>
-          <label className="file-label">
-            {selectedFile ? "Ganti Gambar" : "Pilih Gambar"}
+          {activeProjects.length > 1 && (
+            <div className="upload-project-select">
+              <label>Pilih Proyek</label>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
-          </label>
-
-          {selectedFile && (
-            <div className="preview">
-              <img
-                src={URL.createObjectURL(selectedFile)}
-                alt="Preview karya"
-              />
+              <select
+                value={selectedProjectId || ""}
+                onChange={(e) => {
+                  setSelectedProjectId(Number(e.target.value));
+                  setSelectedFile(null);
+                  setOpenReviewId(null);
+                }}
+              >
+                {activeProjects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.judul}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
-          <button
-            type="submit"
-            className="btn-upload"
-            disabled={uploading || !selectedProjectId}
-          >
-            {uploading ? "Mengunggah..." : "Kirim Karya"}
-          </button>
-        </form>
-      </div>
+          <form onSubmit={handleUpload}>
+            <label className="file-label">
+              {selectedFile ? "Ganti Gambar" : "Pilih Gambar"}
+
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+            </label>
+
+            {selectedFile && (
+              <div className="preview">
+                <img
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="Preview karya"
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn-upload"
+              disabled={uploading || !selectedProjectId || !selectedFile}
+            >
+              {uploading ? "Mengunggah..." : "Kirim Karya"}
+            </button>
+          </form>
+        </section>
+      )}
 
       <div className="gallery-header">
         <div className="gallery-title-group">
           <h3>Galeri Karya Siswa</h3>
-          <p>
-            Kumpulan hasil karya berdasarkan proyek yang sedang dipilih,
-            lengkap dengan kolom komentar peer review.
-          </p>
-        </div>
 
-        <div className="gallery-badge">
-          {loadingGallery ? "Memuat..." : `${gallery.length} karya`}
+          <p>
+            {loadingGallery
+              ? "Sedang memuat karya siswa..."
+              : selectedProject
+              ? (
+                <>
+                  Menampilkan <b>{gallery.length} karya</b> untuk proyek{" "}
+                  <b>{selectedProject.judul}</b>. Berikan komentar peer review
+                  yang membangun.
+                </>
+              )
+              : "Pilih proyek terlebih dahulu untuk melihat karya siswa."}
+          </p>
         </div>
       </div>
 
@@ -427,92 +597,111 @@ function Proyek() {
         ) : gallery.length === 0 ? (
           <p className="empty-text">Belum ada karya di proyek ini</p>
         ) : (
-          gallery.map((item) => (
-            <div className="gallery-card" key={item.id}>
-              <img
-                src={item.image_path}
-                alt={`Karya oleh ${item.uploader}`}
-                onClick={() => setPreviewImg(item.image_path)}
-              />
+          gallery.map((item) => {
+            const comments = commentsMap[item.id] || [];
+            const reviewIsOpen = Number(openReviewId) === Number(item.id);
 
-              <div className="gallery-card-body">
-                <span className="uploader-label">Diunggah oleh</span>
+            return (
+              <article className="gallery-card" key={item.id}>
+                <div className="gallery-image-wrap">
+                  <img
+                    src={item.image_path}
+                    alt={`Karya oleh ${item.uploader}`}
+                    onClick={() => setPreviewImg(item.image_path)}
+                  />
+                </div>
 
-                <p className="uploader">
-                  <b>{item.uploader}</b>
-                </p>
+                <div className="gallery-card-body">
+                  <span className="work-title">
+                    {selectedProject?.judul || "Karya Siswa"}
+                  </span>
 
-                <div className="peer-review-box">
-                  <div className="peer-review-head">
-                    <h4>Komentar Peer Review</h4>
+                  <span className="uploader-label">Diunggah oleh</span>
 
-                    <span className="comment-count">
-                      {(commentsMap[item.id] || []).length} komentar
-                    </span>
-                  </div>
+                  <p className="uploader">
+                    <b>{item.uploader || "Siswa"}</b>
+                  </p>
 
-                  <div className="comment-list">
-                    {loadingComments[item.id] ? (
-                      <p className="comment-empty">Memuat komentar...</p>
-                    ) : (commentsMap[item.id] || []).length === 0 ? (
-                      <p className="comment-empty">
-                        Belum ada komentar. Jadilah yang pertama memberi
-                        masukan.
-                      </p>
-                    ) : (
-                      commentsMap[item.id].map((comment) => (
-                        <div className="comment-item" key={comment.id}>
-                          <div className="comment-top">
-                            <strong>
-                              {comment.nama_pengguna || "Siswa"}
-                            </strong>
+                  <div className="peer-review-compact">
+                    <button
+                      type="button"
+                      className={
+                        reviewIsOpen
+                          ? "comment-toggle-btn active"
+                          : "comment-toggle-btn"
+                      }
+                      onClick={() => handleToggleReview(item.id)}
+                    >
+                      💬 {getCommentCount(item)} Peer Review
+                    </button>
 
-                            <span>
-                              {comment.created_at
-                                ? new Date(
-                                    comment.created_at
-                                  ).toLocaleString("id-ID")
-                                : "Baru saja"}
-                            </span>
-                          </div>
+                    {reviewIsOpen && (
+                      <div className="peer-review-box is-open">
+                        <div className="comment-list">
+                          {loadingComments[item.id] ? (
+                            <p className="comment-empty">Memuat komentar...</p>
+                          ) : comments.length === 0 ? (
+                            <p className="comment-empty">
+                              Belum ada komentar. Jadilah yang pertama memberi
+                              masukan.
+                            </p>
+                          ) : (
+                            comments.map((comment) => (
+                              <div className="comment-item" key={comment.id}>
+                                <div className="comment-top">
+                                  <strong>
+                                    {comment.nama_pengguna || "Siswa"}
+                                  </strong>
 
-                          <p>{comment.komentar}</p>
+                                  <span>
+                                    {comment.created_at
+                                      ? new Date(
+                                          comment.created_at
+                                        ).toLocaleString("id-ID")
+                                      : "Baru saja"}
+                                  </span>
+                                </div>
+
+                                <p>{comment.komentar}</p>
+                              </div>
+                            ))
+                          )}
                         </div>
-                      ))
+
+                        {!isOwner(item) ? (
+                          <div className="comment-form">
+                            <textarea
+                              placeholder="Tulis komentar, saran, atau apresiasi untuk karya ini..."
+                              value={commentInputs[item.id] || ""}
+                              onChange={(e) =>
+                                handleChangeComment(item.id, e.target.value)
+                              }
+                            />
+
+                            <button
+                              type="button"
+                              className="btn-comment"
+                              onClick={() => handleSubmitComment(item.id)}
+                              disabled={sendingComment[item.id]}
+                            >
+                              {sendingComment[item.id]
+                                ? "Mengirim..."
+                                : "Kirim Komentar"}
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="comment-owner-note">
+                            Ini karya milik Anda. Komentar peer review diisi
+                            oleh siswa lain.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
-
-                  {item.uploader !== currentUserName ? (
-                    <div className="comment-form">
-                      <textarea
-                        placeholder="Tulis komentar, saran, atau apresiasi untuk karya ini..."
-                        value={commentInputs[item.id] || ""}
-                        onChange={(e) =>
-                          handleChangeComment(item.id, e.target.value)
-                        }
-                      />
-
-                      <button
-                        type="button"
-                        className="btn-comment"
-                        onClick={() => handleSubmitComment(item.id)}
-                        disabled={sendingComment[item.id]}
-                      >
-                        {sendingComment[item.id]
-                          ? "Mengirim..."
-                          : "Kirim Komentar"}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="comment-owner-note">
-                      Ini karya milik Anda. Komentar peer review diisi oleh
-                      siswa lain.
-                    </p>
-                  )}
                 </div>
-              </div>
-            </div>
-          ))
+              </article>
+            );
+          })
         )}
       </div>
 

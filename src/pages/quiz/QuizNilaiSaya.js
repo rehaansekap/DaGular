@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../style/QuizNilaiSaya.css";
 
 function QuizNilaiSaya() {
+  const navigate = useNavigate();
+
   const user_id = localStorage.getItem("user_id");
   const API_URL = "http://localhost:5000";
   const PASSING_SCORE = 3;
@@ -38,6 +41,22 @@ function QuizNilaiSaya() {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    try {
+      return new Date(value).toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "-";
+    }
+  };
+
   const isProcessedStatus = (status) => {
     return ["graded", "completed", "revision", "needs_review"].includes(
       String(status || "").toLowerCase()
@@ -48,18 +67,29 @@ function QuizNilaiSaya() {
     const cleanStatus = String(status || "").toLowerCase();
 
     if (cleanStatus === "completed" || cleanStatus === "graded") {
-      return "Sudah dinilai";
+      return "Sudah Dinilai";
     }
 
     if (cleanStatus === "revision") {
-      return "Perlu revisi";
+      return "Perlu Revisi";
     }
 
     if (cleanStatus === "needs_review") {
-      return "Perlu ditinjau guru";
+      return "Perlu Ditinjau Guru";
     }
 
-    return "Belum dinilai";
+    return "Belum Dinilai";
+  };
+
+  const getResultStatusClass = (status, passed = false) => {
+    const cleanStatus = String(status || "").toLowerCase();
+
+    if (!isProcessedStatus(cleanStatus)) return "pending";
+    if (cleanStatus === "revision") return "revision";
+    if (cleanStatus === "needs_review") return "pending";
+    if (passed) return "passed";
+
+    return "revision";
   };
 
   const isNonGradedAnswer = (item = {}) => {
@@ -133,6 +163,31 @@ function QuizNilaiSaya() {
     }
 
     return "";
+  };
+
+  const getRevisionNote = (item = {}, passed = false) => {
+    const possibleNotes = [
+      item.teacher_note,
+      item.feedback,
+      item.note,
+      item.revision_note,
+      item.revisionSuggestion,
+      item.revision_suggestion,
+      item.auto_feedback,
+      item.comment,
+    ];
+
+    const note = possibleNotes.find(
+      (value) => typeof value === "string" && value.trim()
+    );
+
+    if (note) return note.trim();
+
+    if (passed) {
+      return "Jawaban sudah memenuhi kriteria penilaian. Pertahankan kualitas jawaban pada LKPD berikutnya.";
+    }
+
+    return "Jawaban belum memenuhi kriteria minimal. Perbaiki dengan menambahkan penjelasan yang lebih lengkap, alasan yang jelas, dan contoh yang sesuai dengan pertanyaan.";
   };
 
   const renderImagePreview = (imageUrl, imageName = "") => {
@@ -322,19 +377,48 @@ function QuizNilaiSaya() {
       return getAnswerScore(item) >= getPassingScore(item);
     });
 
+  const selectedMaxScore = gradedAnswers.reduce((sum, item) => {
+    return sum + getMaxScore(item);
+  }, 0);
+
+  const selectedScoreFromAnswers = gradedAnswers.reduce((sum, item) => {
+    return sum + getAnswerScore(item);
+  }, 0);
+
+  const selectedScore = selectedProcessed
+    ? Number(selectedResult?.score ?? selectedScoreFromAnswers ?? 0)
+    : 0;
+
+  const selectedStatusClass = getResultStatusClass(
+    selectedResult?.status,
+    selectedPassed
+  );
+
+  const handleReviseClick = () => {
+    if (!selectedResult?.pertemuan) return;
+    navigate(`/quiz/${selectedResult.pertemuan}`);
+  };
+
   return (
     <div className="nilai-saya-page">
       <div className="nilai-saya-container">
         <div className="nilai-saya-header">
           <h1 className="nilai-saya-title">Nilai LKPD Saya</h1>
+
           <p className="nilai-saya-desc">
-            Lihat jawaban yang sudah kamu kirim dan hasil penilaian LKPD.
+            Lihat jawaban yang sudah kamu kirim, status penilaian, dan catatan
+            revisi dari LKPD yang telah dikerjakan.
           </p>
         </div>
 
         <div className="nilai-saya-layout">
-          <div className="nilai-saya-sidebar">
-            <h2>Daftar LKPD</h2>
+          <aside className="nilai-saya-sidebar">
+            <div className="sidebar-title-row">
+              <div>
+                <h2>Daftar LKPD</h2>
+                <p>Pilih salah satu hasil untuk melihat detailnya.</p>
+              </div>
+            </div>
 
             {loadingList ? (
               <p className="empty-text">Memuat data...</p>
@@ -346,55 +430,58 @@ function QuizNilaiSaya() {
                   const processed = isProcessedStatus(item.status);
                   const passed =
                     processed &&
-                    (item.status === "completed" ||
-                      Number(item.completed_questions || 0) >=
-                        Number(item.total_questions || 0));
+                    item.status !== "revision" &&
+                    Number(item.total_questions || 0) > 0 &&
+                    Number(item.completed_questions || 0) >=
+                      Number(item.total_questions || 0);
+
+                  const statusClass = getResultStatusClass(item.status, passed);
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={item.id}
                       className={`submission-card ${
                         selectedResult?.id === item.id ? "active" : ""
                       }`}
                       onClick={() => loadResultDetail(item.id)}
                     >
-                      <h3>LKPD Pertemuan {item.pertemuan}</h3>
+                      <div className="submission-card-top">
+                        <div>
+                          <h3>LKPD Pertemuan {item.pertemuan}</h3>
 
-                      <p>
-                        <span>Status:</span>{" "}
-                        <span
-                          className={
-                            processed ? "status graded" : "status pending"
-                          }
-                        >
-                          {getResultStatusText(item.status)}
-                        </span>
+                          <span className={`nilai-status-badge ${statusClass}`}>
+                            {getResultStatusText(item.status)}
+                          </span>
+                        </div>
+
+                        <div className={`submission-score-bubble ${statusClass}`}>
+                          <strong>{processed ? item.score ?? 0 : "-"}</strong>
+                          <small>Nilai</small>
+                        </div>
+                      </div>
+
+                      <p className="submission-date">
+                        {formatDateTime(item.created_at)}
                       </p>
 
-                      <p>
-                        <span>Ketuntasan:</span>{" "}
-                        {processed ? (passed ? "Tuntas" : "Revisi") : "-"}
-                      </p>
+                      {processed && !passed && (
+                        <p className="submission-hint revision">
+                          Perlu diperbaiki
+                        </p>
+                      )}
 
-                      <p>
-                        <span>Nilai:</span>{" "}
-                        {processed ? item.score ?? 0 : "-"}
-                      </p>
-
-                      <p>
-                        <span>Tanggal:</span>{" "}
-                        {item.created_at
-                          ? new Date(item.created_at).toLocaleString("id-ID")
-                          : "-"}
-                      </p>
-                    </div>
+                      {processed && passed && (
+                        <p className="submission-hint passed">Sudah tuntas</p>
+                      )}
+                    </button>
                   );
                 })}
               </div>
             )}
-          </div>
+          </aside>
 
-          <div className="nilai-saya-content">
+          <main className="nilai-saya-content">
             {!selectedResult ? (
               <div className="empty-box">
                 <p>Pilih LKPD di sebelah kiri untuk melihat detail hasilnya.</p>
@@ -405,16 +492,62 @@ function QuizNilaiSaya() {
               </div>
             ) : (
               <>
-                <div className="detail-header">
-                  <h2>Detail Hasil LKPD</h2>
+                <section className="result-summary-card">
+                  <div className={`result-score-block ${selectedStatusClass}`}>
+                    <span>Total Nilai</span>
 
-                  <div
-                    className={
-                      selectedProcessed && selectedPassed
-                        ? "pjbl-student-banner passed"
-                        : "pjbl-student-banner failed"
-                    }
-                  >
+                    <strong>{selectedProcessed ? selectedScore : "-"}</strong>
+
+                    <small>
+                      {selectedProcessed && selectedMaxScore > 0
+                        ? `dari ${selectedMaxScore}`
+                        : "Skor akhir"}
+                    </small>
+                  </div>
+
+                  <div className="result-summary-content">
+                    <div className="result-summary-top">
+                      <div>
+                        <h2>Detail Hasil LKPD</h2>
+                        <p>LKPD Pertemuan {selectedResult.pertemuan}</p>
+                      </div>
+
+                      <span className={`nilai-status-badge ${selectedStatusClass}`}>
+                        {getResultStatusText(selectedResult.status)}
+                      </span>
+                    </div>
+
+                    <div className="result-meta-grid">
+                      <div>
+                        <span>Pertemuan</span>
+                        <strong>{selectedResult.pertemuan}</strong>
+                      </div>
+
+                      <div>
+                        <span>Tanggal Submit</span>
+                        <strong>{formatDateTime(selectedResult.created_at)}</strong>
+                      </div>
+
+                      <div>
+                        <span>Status</span>
+                        <strong>{getResultStatusText(selectedResult.status)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div
+                  className={
+                    selectedProcessed && selectedPassed
+                      ? "pjbl-student-banner passed"
+                      : "pjbl-student-banner failed"
+                  }
+                >
+                  <div className="banner-icon">
+                    {selectedProcessed && selectedPassed ? "✓" : "⚠️"}
+                  </div>
+
+                  <div>
                     {!selectedProcessed ? (
                       <>
                         <strong>Menunggu penilaian</strong>
@@ -423,41 +556,20 @@ function QuizNilaiSaya() {
                     ) : selectedPassed ? (
                       <>
                         <strong>LKPD sudah tuntas.</strong>
-                        <p>Semua bagian yang dinilai sudah memenuhi batas minimal.</p>
+                        <p>
+                          Semua bagian yang dinilai sudah memenuhi batas
+                          minimal.
+                        </p>
                       </>
                     ) : (
                       <>
                         <strong>LKPD perlu diperbaiki.</strong>
-                        <p>Masih ada bagian yang belum memenuhi batas minimal.</p>
+                        <p>
+                          Masih ada bagian yang belum memenuhi batas minimal.
+                          Baca catatan revisi di bawah, lalu perbaiki jawabanmu.
+                        </p>
                       </>
                     )}
-                  </div>
-
-                  <div className="detail-meta">
-                    <p>
-                      <span>Pertemuan:</span> {selectedResult.pertemuan}
-                    </p>
-
-                    <p>
-                      <span>Status:</span>{" "}
-                      {getResultStatusText(selectedResult.status)}
-                    </p>
-
-                    <p>
-                      <span>Total Nilai:</span>{" "}
-                      {selectedProcessed
-                        ? selectedResult.score ?? 0
-                        : "Menunggu penilaian"}
-                    </p>
-
-                    <p>
-                      <span>Tanggal Submit:</span>{" "}
-                      {selectedResult.created_at
-                        ? new Date(selectedResult.created_at).toLocaleString(
-                            "id-ID"
-                          )
-                        : "-"}
-                    </p>
                   </div>
                 </div>
 
@@ -468,15 +580,23 @@ function QuizNilaiSaya() {
                     const status = getScoreStatus(item);
                     const score = getAnswerScore(item);
                     const maxScore = getMaxScore(item);
+                    const passed =
+                      nonGraded || score >= getPassingScore(item);
 
                     return (
-                      <div className="jawaban-card" key={item.id || index}>
+                      <article className="jawaban-card" key={item.id || index}>
                         <div className="student-question-head">
-                          <h3>
-                            {nonGraded
-                              ? "Self Reflection"
-                              : `Soal ${index + 1}`}
-                          </h3>
+                          <div>
+                            <span className="question-mini-label">
+                              {nonGraded ? "Refleksi" : `Soal ${index + 1}`}
+                            </span>
+
+                            <h3>
+                              {nonGraded
+                                ? "Self Reflection"
+                                : `Soal ${index + 1}`}
+                            </h3>
+                          </div>
 
                           {processed && (
                             <span className={status.className}>
@@ -487,12 +607,15 @@ function QuizNilaiSaya() {
 
                         <div className="jawaban-group">
                           <label>Pertanyaan</label>
-                          <div className="readonly-box">{item.question}</div>
+                          <div className="readonly-box question-box">
+                            {item.question}
+                          </div>
                         </div>
 
                         {item.image_url && (
                           <div className="jawaban-group">
                             <label>Gambar Soal</label>
+
                             <img
                               src={item.image_url}
                               alt={`Soal ${index + 1}`}
@@ -511,24 +634,58 @@ function QuizNilaiSaya() {
                           </div>
                         </div>
 
-                        <div className="jawaban-group">
-                          <label>{nonGraded ? "Penilaian" : "Nilai"}</label>
+                        <div className="jawaban-footer-row">
+                          <div className="jawaban-score-box">
+                            <span>{nonGraded ? "Penilaian" : "Nilai"}</span>
 
-                          <div className="readonly-box">
-                            {nonGraded
-                              ? "Tidak Dinilai"
-                              : processed
-                              ? `${score} / ${maxScore}`
-                              : "Belum dinilai"}
+                            <strong>
+                              {nonGraded
+                                ? "Tidak Dinilai"
+                                : processed
+                                ? `${score} / ${maxScore}`
+                                : "Belum dinilai"}
+                            </strong>
                           </div>
+
+                          {processed && !nonGraded && (
+                            <div
+                              className={
+                                passed
+                                  ? "revision-note passed"
+                                  : "revision-note failed"
+                              }
+                            >
+                              <strong>
+                                {passed ? "Catatan" : "Catatan Revisi"}
+                              </strong>
+
+                              <p>{getRevisionNote(item, passed)}</p>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      </article>
                     );
                   })}
                 </div>
+
+                {selectedProcessed && !selectedPassed && (
+                  <div className="revision-cta-bar">
+                    <div>
+                      <strong>Siap memperbaiki jawaban?</strong>
+                      <p>
+                        Kamu bisa kembali ke halaman pengerjaan LKPD untuk
+                        memperbaiki jawaban yang belum sesuai.
+                      </p>
+                    </div>
+
+                    <button type="button" onClick={handleReviseClick}>
+                      ✏️ Perbaiki & Kirim Ulang LKPD →
+                    </button>
+                  </div>
+                )}
               </>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </div>
