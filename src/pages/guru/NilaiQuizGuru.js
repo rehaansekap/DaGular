@@ -17,8 +17,15 @@ function NilaiQuizGuru() {
 
   const getImageUrl = (path) => {
     if (!path) return "";
-    if (path.startsWith("http")) return path;
-    return `${API_URL}/${path}`;
+    let cleanPath = String(path).trim();
+    if (cleanPath.startsWith("http://localhost:5000")) {
+      cleanPath = cleanPath.replace("http://localhost:5000", API_URL);
+    }
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanPath.startsWith("http://")) {
+      cleanPath = cleanPath.replace(/^http:/, "https:");
+    }
+    if (cleanPath.startsWith("http")) return cleanPath;
+    return `${API_URL}/${cleanPath.replace(/^\//, "")}`;
   };
 
   const safeJsonParse = (value, fallback = null) => {

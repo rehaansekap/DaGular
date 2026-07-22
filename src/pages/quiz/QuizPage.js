@@ -4,6 +4,18 @@ import "../../style/QuizPage.css";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
+const formatImageUrl = (url) => {
+  if (!url) return "";
+  let cleanUrl = String(url).trim();
+  if (cleanUrl.startsWith("http://localhost:5000")) {
+    cleanUrl = cleanUrl.replace("http://localhost:5000", API_URL);
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+    cleanUrl = cleanUrl.replace(/^http:/, "https:");
+  }
+  return cleanUrl;
+};
+
 const safeJsonParse = (value, fallback = null) => {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -1103,11 +1115,11 @@ function QuizPage() {
           {currentItem.image_url && (
             <div className="quiz-image-wrapper">
               <img
-                src={currentItem.image_url}
+                src={formatImageUrl(currentItem.image_url)}
                 alt={`Gambar soal ${safeCurrentIndex + 1}`}
                 className="quiz-image clickable"
                 onClick={() =>
-                  !currentLocked && setPreviewImage(currentItem.image_url)
+                  !currentLocked && setPreviewImage(formatImageUrl(currentItem.image_url))
                 }
               />
             </div>
@@ -1181,11 +1193,11 @@ function QuizPage() {
                         </p>
 
                         <img
-                          src={uploadedImage.image_url}
+                          src={formatImageUrl(uploadedImage.image_url)}
                           alt={`Preview ${field}`}
                           className="quiz-image clickable"
                           onClick={() =>
-                            setPreviewImage(uploadedImage.image_url)
+                            setPreviewImage(formatImageUrl(uploadedImage.image_url))
                           }
                         />
 
@@ -1268,11 +1280,11 @@ function QuizPage() {
                         </p>
 
                         <img
-                          src={uploadedImage.image_url}
+                          src={formatImageUrl(uploadedImage.image_url)}
                           alt={`Preview ${field}`}
                           className="quiz-image clickable"
                           onClick={() =>
-                            setPreviewImage(uploadedImage.image_url)
+                            setPreviewImage(formatImageUrl(uploadedImage.image_url))
                           }
                         />
 

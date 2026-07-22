@@ -9,6 +9,18 @@ function QuizNilaiSaya() {
   const API_URL = process.env.REACT_APP_API_URL || "";
   const PASSING_SCORE = 3;
 
+  const formatImageUrl = (url) => {
+    if (!url) return "";
+    let cleanUrl = String(url).trim();
+    if (cleanUrl.startsWith("http://localhost:5000")) {
+      cleanUrl = cleanUrl.replace("http://localhost:5000", API_URL || "https://dagular.my.id");
+    }
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+      cleanUrl = cleanUrl.replace(/^http:/, "https:");
+    }
+    return cleanUrl;
+  };
+
   const [results, setResults] = useState([]);
   const [selectedResult, setSelectedResult] = useState(null);
   const [detailAnswers, setDetailAnswers] = useState([]);
@@ -616,7 +628,7 @@ function QuizNilaiSaya() {
                             <label>Gambar Soal</label>
 
                             <img
-                              src={item.image_url}
+                              src={formatImageUrl(item.image_url)}
                               alt={`Soal ${index + 1}`}
                               className="quiz-image"
                             />

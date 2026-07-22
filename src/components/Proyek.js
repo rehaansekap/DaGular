@@ -2,6 +2,20 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../style/Proyek.css";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+const formatImageUrl = (url) => {
+  if (!url) return "";
+  let cleanUrl = String(url).trim();
+  if (cleanUrl.startsWith("http://localhost:5000")) {
+    cleanUrl = cleanUrl.replace("http://localhost:5000", API_URL);
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+    cleanUrl = cleanUrl.replace(/^http:/, "https:");
+  }
+  return cleanUrl;
+};
+
 function Proyek() {
   const navigate = useNavigate();
 
@@ -605,9 +619,9 @@ function Proyek() {
               <article className="gallery-card" key={item.id}>
                 <div className="gallery-image-wrap">
                   <img
-                    src={item.image_path}
+                    src={formatImageUrl(item.image_path)}
                     alt={`Karya oleh ${item.uploader}`}
-                    onClick={() => setPreviewImg(item.image_path)}
+                    onClick={() => setPreviewImg(formatImageUrl(item.image_path))}
                   />
                 </div>
 
@@ -707,7 +721,7 @@ function Proyek() {
 
       {previewImg && (
         <div className="image-modal" onClick={() => setPreviewImg(null)}>
-          <img src={previewImg} alt="Preview karya besar" />
+          <img src={formatImageUrl(previewImg)} alt="Preview karya besar" />
         </div>
       )}
     </div>

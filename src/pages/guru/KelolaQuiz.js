@@ -4,6 +4,18 @@ import "../../style/KelolaQuiz.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
+const formatImageUrl = (url) => {
+  if (!url) return "";
+  let cleanUrl = String(url).trim();
+  if (cleanUrl.startsWith("http://localhost:5000")) {
+    cleanUrl = cleanUrl.replace("http://localhost:5000", API_BASE_URL);
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+    cleanUrl = cleanUrl.replace(/^http:/, "https:");
+  }
+  return cleanUrl;
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
@@ -1063,7 +1075,7 @@ Konteks Penggunaan`}
                                     <div className="question-group">
                                       <label>Gambar Soal</label>
                                       <img
-                                        src={q.image_url}
+                                        src={formatImageUrl(q.image_url)}
                                         alt={`Soal ${index + 1}`}
                                         className="quiz-preview-img"
                                       />

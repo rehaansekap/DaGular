@@ -2,6 +2,20 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "../../style/KelolaMateri.css";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+const formatImageUrl = (url) => {
+  if (!url) return "";
+  let cleanUrl = String(url).trim();
+  if (cleanUrl.startsWith("http://localhost:5000")) {
+    cleanUrl = cleanUrl.replace("http://localhost:5000", API_URL);
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+    cleanUrl = cleanUrl.replace(/^http:/, "https:");
+  }
+  return cleanUrl;
+};
+
 export default function KelolaMateri() {
   const [materiList, setMateriList] = useState([]);
   const [judul, setJudul] = useState("");
@@ -299,7 +313,7 @@ export default function KelolaMateri() {
 
                     {item.url && item.type === "image" && (
                       <img
-                        src={item.url}
+                        src={formatImageUrl(item.url)}
                         alt="preview"
                         className="preview-img"
                       />
@@ -307,7 +321,7 @@ export default function KelolaMateri() {
 
                     {item.url && item.type === "video" && (
                       <video
-                        src={item.url}
+                        src={formatImageUrl(item.url)}
                         controls
                         className="preview-video"
                       />

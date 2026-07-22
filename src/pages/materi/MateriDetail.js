@@ -2,6 +2,20 @@ import { Link, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import "../../style/MateriDetail.css";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+const formatImageUrl = (url) => {
+  if (!url) return "";
+  let cleanUrl = String(url).trim();
+  if (cleanUrl.startsWith("http://localhost:5000")) {
+    cleanUrl = cleanUrl.replace("http://localhost:5000", API_URL);
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+    cleanUrl = cleanUrl.replace(/^http:/, "https:");
+  }
+  return cleanUrl;
+};
+
 const pertemuanLabels = {
   1: "Pengantar Desain Digital",
   2: "Proses Kreatif Desain",
@@ -91,7 +105,7 @@ export default function MateriDetail() {
                 className="detail-image-button"
                 onClick={() => setSelectedImage(img.url)}
               >
-                <img src={img.url} alt={img.title || "Gambar materi"} />
+                <img src={formatImageUrl(img.url)} alt={img.title || "Gambar materi"} />
 
                 <span className="detail-zoom-badge">
                   Klik untuk memperbesar
@@ -275,7 +289,7 @@ export default function MateriDetail() {
           </button>
 
           <img
-            src={selectedImage}
+            src={formatImageUrl(selectedImage)}
             alt="Preview materi"
             className="detail-modal-image"
             onClick={(e) => e.stopPropagation()}
