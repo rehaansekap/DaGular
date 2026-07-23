@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "../../style/KelolaMateri.css";
 
@@ -26,9 +26,17 @@ export default function KelolaMateri() {
   const fetchMateri = async () => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/materi`);
-      setMateriList(res.data);
+
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
+      setMateriList(data);
     } catch (err) {
       console.error("Error fetch materi:", err);
+      alert("Gagal mengambil data materi");
     }
   };
 
@@ -36,14 +44,34 @@ export default function KelolaMateri() {
     fetchMateri();
   }, []);
 
-  const groupedMateri = materiList.reduce((acc, item) => {
-    const key = Number(item.pertemuan);
+  const groupedMateri = useMemo(() => {
+    return materiList.reduce((acc, item) => {
+      const key = Number(item.pertemuan);
 
-    if (!acc[key]) acc[key] = [];
+      if (!acc[key]) acc[key] = [];
 
-    acc[key].push(item);
-    return acc;
-  }, {});
+      acc[key].push(item);
+      return acc;
+    }, {});
+  }, [materiList]);
+
+  const totalPertemuan = Object.keys(groupedMateri).length;
+  const totalMateri = materiList.length;
+
+  const totalKonten = useMemo(() => {
+    return materiList.reduce((total, materi) => {
+      try {
+        const parsedKonten =
+          typeof materi.konten === "string"
+            ? JSON.parse(materi.konten)
+            : materi.konten;
+
+        return total + (Array.isArray(parsedKonten) ? parsedKonten.length : 0);
+      } catch {
+        return total;
+      }
+    }, 0);
+  }, [materiList]);
 
   const tambahKonten = (type) => {
     setKonten([
@@ -76,10 +104,15 @@ export default function KelolaMateri() {
   };
 
   const handleUpload = async (e, index) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Silakan login terlebih dahulu");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -201,15 +234,45 @@ export default function KelolaMateri() {
   return (
     <div className="kelola-page">
       <div className="kelola-container">
-        <div className="kelola-header">
+        <section className="kelola-header">
           <div>
-            <span className="kelola-label">Dashboard Admin</span>
+            <span className="kelola-label">Panel Guru</span>
+
             <h1 className="kelola-title">Kelola Materi</h1>
+
             <p className="kelola-desc">
-              Tambahkan, susun, dan kelola materi pembelajaran siswa.
+              Tambahkan, susun, dan kelola materi pembelajaran siswa berdasarkan
+              pertemuan. Materi dapat berisi teks, gambar, video, dan embed
+              Genially.
             </p>
           </div>
-        </div>
+
+          <button type="button" className="kelola-refresh-btn" onClick={fetchMateri}>
+            Refresh Data
+          </button>
+        </section>
+
+        <section className="kelola-summary">
+          <div className="kelola-summary-card">
+            <span>Total Pertemuan</span>
+            <strong>{totalPertemuan}</strong>
+          </div>
+
+          <div className="kelola-summary-card">
+            <span>Total Materi</span>
+            <strong>{totalMateri}</strong>
+          </div>
+
+          <div className="kelola-summary-card">
+            <span>Total Konten</span>
+            <strong>{totalKonten}</strong>
+          </div>
+
+          <div className="kelola-summary-card">
+            <span>Jenis Konten</span>
+            <strong>4</strong>
+          </div>
+        </section>
 
         <div className="kelola-layout">
           <form onSubmit={handleSubmit} className="kelola-form">
@@ -259,9 +322,7 @@ export default function KelolaMateri() {
               <div key={index} className="konten-block">
                 <div className="konten-block-header">
                   <div>
-                    <span className="content-type">
-                      {getTypeLabel(item.type)}
-                    </span>
+                    <span className="content-type">{getTypeLabel(item.type)}</span>
                     <h4>Konten {index + 1}</h4>
                   </div>
 
@@ -337,9 +398,7 @@ export default function KelolaMateri() {
                       type="text"
                       placeholder="Tempel link Genially atau kode iframe"
                       value={item.url}
-                      onChange={(e) =>
-                        handleGeniallyChange(index, e.target.value)
-                      }
+                      onChange={(e) => handleGeniallyChange(index, e.target.value)}
                     />
 
                     {item.url && (
@@ -408,13 +467,13 @@ export default function KelolaMateri() {
             )}
 
             {Object.keys(groupedMateri)
-              .sort((a, b) => a - b)
-              .map((pertemuan) => (
-                <div key={pertemuan} className="pertemuan-group">
-                  <h3>Pertemuan {pertemuan}</h3>
+              .sort((a, b) => Number(a) - Number(b))
+              .map((pertemuanKey) => (
+                <div key={pertemuanKey} className="pertemuan-group">
+                  <h3>Pertemuan {pertemuanKey}</h3>
 
                   <div className="materi-grid">
-                    {groupedMateri[pertemuan].map((m) => (
+                    {groupedMateri[pertemuanKey].map((m) => (
                       <div key={m.id} className="materi-card">
                         <div>
                           <span className="materi-number">

@@ -784,27 +784,50 @@ export default function KelolaQuizGuru() {
       <div className="kelolaquiz-container">
         <section className="kelolaquiz-hero">
           <div>
-            <span className="kelolaquiz-badge">Kelola Quiz</span>
+            <span className="kelolaquiz-badge">Panel Guru</span>
+
             <h1 className="kelolaquiz-title">Kelola LKPD</h1>
+
             <p className="kelolaquiz-desc">
-              Atur judul, pendahuluan LKPD, soal, kolom jawaban siswa, gambar
-              soal, rubrik penilaian, dan tipe jawaban siswa.
+              Atur judul, pendahuluan LKPD, soal, kolom jawaban siswa, gambar soal,
+              rubrik penilaian, dan tipe jawaban siswa berdasarkan pertemuan.
             </p>
           </div>
 
-          <div className="kelolaquiz-summary">
-            <div className="summary-card">
-              <span>Total Pertemuan</span>
-              <strong>{totalPertemuan}</strong>
-            </div>
-            <div className="summary-card">
-              <span>Total Soal</span>
-              <strong>{totalSoal}</strong>
-            </div>
-            <div className="summary-card">
-              <span>Soal Bergambar</span>
-              <strong>{totalBergambar}</strong>
-            </div>
+          <button
+            type="button"
+            className="kelolaquiz-refresh-btn"
+            onClick={fetchQuestions}
+            disabled={pageLoading}
+          >
+            {pageLoading ? "Memuat..." : "Refresh Data"}
+          </button>
+        </section>
+
+        <section className="kelolaquiz-summary">
+          <div className="summary-card">
+            <span>Total Pertemuan</span>
+            <strong>{totalPertemuan}</strong>
+          </div>
+
+          <div className="summary-card">
+            <span>Total Soal</span>
+            <strong>{totalSoal}</strong>
+          </div>
+
+          <div className="summary-card">
+            <span>Soal Bergambar</span>
+            <strong>{totalBergambar}</strong>
+          </div>
+
+          <div className="summary-card">
+            <span>Rubrik Aktif</span>
+            <strong>
+              {Object.values(rubriksPerSoal).reduce(
+                (total, rubrics) => total + (Array.isArray(rubrics) ? rubrics.length : 0),
+                0
+              )}
+            </strong>
           </div>
         </section>
 
